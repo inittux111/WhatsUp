@@ -4,6 +4,8 @@ mod permissions;
 mod policy;
 mod style;
 
+pub use style::Extras;
+
 use gtk::prelude::*;
 use gtk::{gio, glib};
 use webkit::prelude::*;
@@ -13,11 +15,11 @@ use crate::paths::AccountDirs;
 pub const WHATSAPP_URL: &str = "https://web.whatsapp.com/";
 
 /// Builds a web view for one account and starts loading WhatsApp Web.
-/// `scripts` runs the user's own scripts in it.
-pub fn build(dirs: &AccountDirs, scripts: bool) -> webkit::WebView {
+/// `extras` are the theme colours and user scripts to add.
+pub fn build(dirs: &AccountDirs, extras: Extras) -> webkit::WebView {
     let session = webkit::NetworkSession::new(dirs.data.to_str(), dirs.cache.to_str());
     let content = webkit::UserContentManager::new();
-    style::load(&content, scripts);
+    style::load(&content, extras);
 
     let view = webkit::WebView::builder()
         .network_session(&session)
@@ -46,17 +48,25 @@ pub fn build(dirs: &AccountDirs, scripts: bool) -> webkit::WebView {
     view
 }
 
-/// Loads the stylesheets (and scripts, if `scripts`) again and reloads the
-/// page, so changes to them show.
-pub fn reload_customizations(view: &webkit::WebView, scripts: bool) {
+/// Loads the stylesheets and scripts again and reloads the page, so changes
+/// to them show.
+pub fn reload_customizations(view: &webkit::WebView, extras: Extras) {
     let Some(content) = view.user_content_manager() else {
         return;
     };
     let view = view.clone();
     glib::spawn_future_local(async move {
-        style::apply(content, scripts).await;
+        style::apply(content, extras).await;
         view.reload();
     });
+}
+
+/// Swaps in new stylesheets (such as new theme colours) without reloading
+/// the page; WebKit restyles it right away.
+pub fn restyle(view: &webkit::WebView, extras: Extras) {
+    if let Some(content) = view.user_content_manager() {
+        style::load(&content, extras);
+    }
 }
 
 /// Applies the zoom and spell checking settings now and whenever they change.

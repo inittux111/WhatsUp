@@ -10,6 +10,7 @@ mod paths;
 mod preferences;
 mod settings;
 mod shortcuts;
+mod theme;
 mod tray;
 mod unread;
 mod web;

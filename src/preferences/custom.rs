@@ -13,7 +13,14 @@ use crate::settings::{Settings, Values};
 pub fn group_for(settings: &Settings, values: &Values) -> adw::PreferencesGroup {
     let group = group("Styles and Scripts");
     group.set_description(Some(
-        "Files in these folders are added to WhatsApp Web, in name order.",
+        "Files in these folders are added to WhatsApp Web, in name order, on top of the system colours.",
+    ));
+    group.add(&switch(
+        "Use System Colours",
+        "WhatsApp takes its colours from your GNOME theme and accent colour",
+        values.system_colors,
+        settings,
+        |v, on| v.system_colors = on,
     ));
     group.add(&folder_row(
         "Stylesheets",

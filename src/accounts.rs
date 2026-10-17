@@ -40,6 +40,10 @@ struct Inner {
     hooks: RefCell<Vec<Hook>>,
     unread_listeners: RefCell<Vec<UnreadListener>>,
     scripts: Cell<bool>,
+    /// Whether WhatsApp Web takes the system theme's colours.
+    system_colors: Cell<bool>,
+    /// The system theme's colours as a stylesheet, once read.
+    theme: RefCell<Option<String>>,
     /// Set while `sync` runs: showing a page writes the settings, which
     /// would call `sync` again halfway through.
     syncing: Cell<bool>,
@@ -56,6 +60,8 @@ impl Accounts {
             hooks: RefCell::default(),
             unread_listeners: RefCell::default(),
             scripts: Cell::new(values.custom_scripts),
+            system_colors: Cell::new(values.system_colors),
+            theme: RefCell::default(),
             syncing: Cell::new(false),
         }));
         accounts.sync(&values);
@@ -160,11 +166,14 @@ impl Accounts {
                     session.page.set_title(Some(&account.name));
                 }
                 Some(_) => {}
-                None => self.open(account, values.custom_scripts),
+                None => self.open(account),
             }
         }
         if self.0.scripts.replace(values.custom_scripts) != values.custom_scripts {
             self.reload_customizations();
+        }
+        if self.0.system_colors.replace(values.system_colors) != values.system_colors {
+            self.restyle();
         }
         // A new account becomes the active one, so its QR code shows.
         if self.current().is_none_or(|s| s.id != values.active_account) {
@@ -175,11 +184,40 @@ impl Accounts {
     /// Reloads every page with the current stylesheets and scripts.
     pub fn reload_customizations(&self) {
         for session in self.sessions() {
-            web::reload_customizations(&session.view, self.0.scripts.get());
+            web::reload_customizations(&session.view, self.extras());
         }
     }
 
-    fn open(&self, account: &Account, scripts: bool) {
+    /// Gives every page the theme's new colours, as `theme::follow` reads them.
+    pub fn set_theme(&self, css: String) {
+        if self.0.theme.borrow().as_deref() == Some(css.as_str()) {
+            return;
+        }
+        self.0.theme.replace(Some(css));
+        if self.0.system_colors.get() {
+            self.restyle();
+        }
+    }
+
+    fn restyle(&self) {
+        for session in self.sessions() {
+            web::restyle(&session.view, self.extras());
+        }
+    }
+
+    fn extras(&self) -> web::Extras {
+        web::Extras {
+            scripts: self.0.scripts.get(),
+            theme: self
+                .0
+                .system_colors
+                .get()
+                .then(|| self.0.theme.borrow().clone())
+                .flatten(),
+        }
+    }
+
+    fn open(&self, account: &Account) {
         let dirs = match paths::account_dirs(&account.id) {
             Ok(dirs) => dirs,
             Err(err) => {
@@ -187,7 +225,7 @@ impl Accounts {
                 return;
             }
         };
-        let view = web::build(&dirs, scripts);
+        let view = web::build(&dirs, self.extras());
         web::follow_settings(&view, &self.0.settings);
         let page = self
             .0

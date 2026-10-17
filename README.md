@@ -19,8 +19,9 @@ sending a file.
   where to save each one
 - **Zoom**, **spell checking** in the languages you pick, and **keyboard
   shortcuts** you can change
-- **Follows your GNOME theme**, including your own stylesheets (such as Abyss)
-  and, if you turn them on, your own scripts
+- **Follows your GNOME theme**: WhatsApp itself takes its colours from your
+  theme and accent colour, light or dark, and changes along with them; your
+  own stylesheets and (if you turn them on) scripts go on top
 - Remembers its window size, and shows the unread count on the app icon in
   docks that support it
 
@@ -40,12 +41,9 @@ sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 | Scripts for WhatsApp Web (off by default) | `~/.config/whatsup-desktop/js/*.js` |
 | Settings | `~/.config/whatsup-desktop/settings.ini` (or Settings, `Ctrl+,`) |
 
-Files are applied in name order. Settings → Chats → Styles and Scripts opens
-these folders and reloads them without a restart. To use the Abyss theme:
-
-```sh
-ln -s ~/Git/claude/abyss-theme/src/zapzap/Abyss.css ~/.config/whatsup-desktop/css/abyss.css
-```
+WhatsApp's colours come from your GNOME theme (Settings → Chats → Use System
+Colours). Stylesheets go on top of that, in name order. Settings → Chats →
+Styles and Scripts opens these folders and reloads them without a restart.
 
 ## Building from source
 

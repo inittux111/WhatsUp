@@ -47,6 +47,8 @@ pub struct Values {
     pub active_account: String,
     /// Run the user's own scripts from `~/.config/whatsup-desktop/js` in WhatsApp Web.
     pub custom_scripts: bool,
+    /// WhatsApp Web takes its colours from the system theme.
+    pub system_colors: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -82,6 +84,7 @@ impl Default for Values {
             accounts: accounts::defaults(),
             active_account: accounts::FIRST_ID.to_owned(),
             custom_scripts: false,
+            system_colors: true,
         }
     }
 }
@@ -153,6 +156,7 @@ impl Values {
             .filter(|id| v.accounts.iter().any(|a| a.id == *id))
             .unwrap_or_else(|| v.accounts[0].id.clone());
         v.custom_scripts = flag(CHATS, "custom-scripts", v.custom_scripts);
+        v.system_colors = flag(CHATS, "system-colors", v.system_colors);
         v
     }
 
@@ -184,6 +188,7 @@ impl Values {
         accounts::write(&file, &self.accounts);
         file.set_string(GENERAL, "active-account", &self.active_account);
         file.set_boolean(CHATS, "custom-scripts", self.custom_scripts);
+        file.set_boolean(CHATS, "system-colors", self.system_colors);
         file.to_data().to_string()
     }
 }
@@ -251,6 +256,7 @@ mod tests {
             ],
             active_account: "account-2".into(),
             custom_scripts: true,
+            system_colors: false,
         };
         assert_eq!(Values::parse(&values.to_data()), values);
     }

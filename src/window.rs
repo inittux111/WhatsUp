@@ -7,7 +7,7 @@ use gtk::{gio, glib};
 use crate::accounts::Accounts;
 use crate::app::APP_NAME;
 use crate::settings::Settings;
-use crate::{preferences, shortcuts};
+use crate::{preferences, shortcuts, theme};
 
 /// The main window and the parts of it that other modules attach to.
 pub struct Main {
@@ -27,8 +27,12 @@ pub fn build(app: &adw::Application, settings: Settings) -> Main {
 
     let content = adw::ToolbarView::new();
     content.add_top_bar(&header);
+    // The theme probes sit invisibly over the pages.
+    let pages = gtk::Overlay::builder().child(&stack).build();
+    let for_theme = accounts.clone();
+    pages.add_overlay(&theme::follow(move |css| for_theme.set_theme(css)));
     let toasts = adw::ToastOverlay::new();
-    toasts.set_child(Some(&stack));
+    toasts.set_child(Some(&pages));
     content.set_content(Some(&toasts));
 
     let window = adw::ApplicationWindow::builder()
