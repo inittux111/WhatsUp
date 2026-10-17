@@ -23,3 +23,12 @@ pub fn decide(view: &webkit::WebView, request: &webkit::PermissionRequest) -> bo
     }
     true
 }
+
+/// Tells WebKit up front that WhatsApp Web may show notifications, so
+/// WhatsApp doesn't ask for them again on every start.
+pub fn grant_notifications(context: &webkit::WebContext) {
+    context.connect_initialize_notification_permissions(|context| {
+        let whatsapp = webkit::SecurityOrigin::for_uri(super::WHATSAPP_URL);
+        context.initialize_notification_permissions(&[&whatsapp], &[]);
+    });
+}

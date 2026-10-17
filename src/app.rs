@@ -3,7 +3,7 @@
 use adw::prelude::*;
 use gtk::glib;
 
-use crate::{background, paths, window};
+use crate::{background, notifications, paths, window};
 
 pub const APP_ID: &str = "app.whatsup.WhatsUp";
 pub const APP_NAME: &str = "WhatsUp";
@@ -33,6 +33,7 @@ fn activate(app: &adw::Application) {
     match window::build(app) {
         Ok((window, view)) => {
             background::attach(app, &window, &view);
+            notifications::attach(app, &window, &view);
             window.present();
         }
         Err(err) => {

@@ -3,6 +3,7 @@
 mod app;
 mod background;
 mod badge;
+mod notifications;
 mod paths;
 mod tray;
 mod unread;

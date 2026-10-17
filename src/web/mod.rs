@@ -37,6 +37,9 @@ pub fn build(dirs: &AccountDirs) -> webkit::WebView {
         None
     });
     view.connect_permission_request(permissions::decide);
+    if let Some(context) = view.context() {
+        permissions::grant_notifications(&context);
+    }
 
     view.load_uri(WHATSAPP_URL);
     view
