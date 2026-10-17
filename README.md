@@ -167,6 +167,19 @@ shows notifications for apps with an installed `.desktop` file.
 - Each account's data stays in private folders (`~/.local/share/whatsup-desktop` and
   `~/.cache/whatsup-desktop`, readable only by you).
 
+## Use at your own risk
+
+whatsup-desktop is an unofficial, personal project. It isn't affiliated with,
+endorsed by or supported by WhatsApp or Meta; WhatsApp is a trademark of
+WhatsApp LLC.
+
+- It shows WhatsApp's own web client and doesn't use any unofficial protocol,
+  but WhatsApp's terms and how they enforce them are up to WhatsApp. Nothing
+  guarantees your account won't be restricted.
+- WhatsApp can change WhatsApp Web at any time, and some features may stop
+  working until whatsup-desktop is updated.
+- It comes with no warranty, as the GPL says: you use it at your own risk.
+
 ## Licence
 
 GPL-3.0-or-later
