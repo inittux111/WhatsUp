@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.whatsup.WhatsUp</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>WhatsUp</name>
+  <summary>Chat on WhatsApp from your desktop</summary>
+  <description>
+    <p>WhatsUp runs WhatsApp Web in a native GNOME window that stays responsive, follows your theme and keeps your account data private.</p>
+  </description>
+  <url type="homepage">https://github.com/inittux111/whatsup-desktop</url>
+  <developer id="io.github.inittux111">
+    <name>inittux111</name>
+  </developer>
+  <launchable type="desktop-id">app.whatsup.WhatsUp.desktop</launchable>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-17"/>
+  </releases>
+</component>

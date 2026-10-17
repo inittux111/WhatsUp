@@ -28,7 +28,7 @@ WhatsUp is a WhatsApp client for Linux/GNOME, for personal use only (not distrib
 - Treat everything from the web content as untrusted: validate every message the page sends to the app before acting on it.
 - Only allow `web.whatsapp.com` inside the web view; open every other link in the user's default browser.
 - Grant camera, microphone and notification permission only to WhatsApp's own origin; refuse all other permission requests.
-- Enable WebKitGTK's sandbox, and disable the web inspector (developer tools) in release/RPM builds.
+- WebKitGTK 6 always runs web content in its sandbox; don't weaken it (e.g. with `add_path_to_sandbox`) without need. The web inspector (developer tools) is on in debug builds only.
 - Sanitize download file names before saving, so a file can't be written outside the Downloads folder.
 
 ## Performance
@@ -40,7 +40,11 @@ WhatsUp is a WhatsApp client for Linux/GNOME, for personal use only (not distrib
 
 ## Architecture
 
-No crate exists yet. Once it does, fill this section in with the big picture: the module layout, how the native app talks to the WhatsApp page (script messages and injected JS) and which side is trusted, where each account's WebKit data folder lives, and how the Abyss WhatsApp stylesheet is loaded into the page.
+- `app.rs` starts the `adw::Application` (single instance: a second launch presents the existing window). `window.rs` builds the window: a header bar with the main menu above the web view.
+- `web/` owns everything about the web content and is the trust boundary: `policy.rs` decides which navigations load inside (only `https://web.whatsapp.com`) and which links may be handed to the desktop (`http`, `https`, `mailto`); `permissions.rs` allows only notifications and camera/microphone, and only for WhatsApp; `style.rs` injects the user's stylesheets. Anything new that reacts to page content (script messages, downloads, notifications) belongs here and must go through the same checks.
+- `paths.rs` is the only place that decides file locations, and creates them 0700. Each account has its own WebKit `NetworkSession` in `~/.local/share/whatsup-desktop/accounts/<account>` (cookies, login) and `~/.cache/whatsup-desktop/accounts/<account>`; so far there is one account, `default`.
+- Web stylesheets are every `.css` file in `~/.config/whatsup-desktop/css`, read asynchronously at startup and injected as user-level style sheets for `web.whatsapp.com` only. Abyss is applied by symlinking its stylesheet there: `ln -s ~/Git/claude/abyss-theme/src/zapzap/Abyss.css ~/.config/whatsup-desktop/css/abyss.css`. Its light and dark sets follow the page's `prefers-color-scheme`, which WebKitGTK takes from libadwaita.
+- `data/` holds the desktop file, metainfo and icons; `whatsup-desktop.spec` and the `Makefile` package them.
 
 ## Theming (Abyss)
 
@@ -56,7 +60,8 @@ All building and development happens in a container: never install build tools o
 ```sh
 toolbox create whatsup-desktop --image registry.fedoraproject.org/fedora-toolbox:44   # if it doesn't exist
 toolbox run -c whatsup-desktop sudo dnf install -y cargo clippy rustfmt libadwaita-devel \
-    webkitgtk6.0-devel blueprint-compiler rpm-build google-noto-color-emoji-fonts
+    webkitgtk6.0-devel blueprint-compiler rpm-build google-noto-color-emoji-fonts \
+    desktop-file-utils libappstream-glib make
 toolbox run -c whatsup-desktop cargo install cargo-audit                             # dependency security checks
 ```
 
@@ -64,7 +69,7 @@ The toolbox has its own fonts: without the emoji font, emoji show as white outli
 
 ## Commands
 
-No crate exists yet. Once it does, run everything through the toolbox:
+Run everything through the toolbox:
 
 ```sh
 toolbox run -c whatsup-desktop cargo build                 # build
@@ -76,7 +81,7 @@ toolbox run -c whatsup-desktop cargo fmt                   # format
 toolbox run -c whatsup-desktop cargo audit                 # check dependencies for security advisories
 ```
 
-The app ships as an RPM: a `.spec` (built with `rpmbuild -ba` in the toolbox), a `.desktop` file, an icon and the app ID, all matching. The spec must `Requires: webkitgtk6.0` and `google-noto-color-emoji-fonts`. Keep `BuildRequires`/`Requires` in sync with what the toolbox needs. The user installs the RPM on the host (`sudo dnf install ./<file>.rpm`).
+The app ships as an RPM: `whatsup-desktop.spec`, the `.desktop` file, the icons and the app ID, all matching. `toolbox run -c whatsup-desktop make rpm` packs the sources and the vendored crates (`cargo vendor`, so `rpmbuild` builds offline) into `target/rpm/SOURCES` and builds the RPM into `target/rpm/RPMS/x86_64/`. The spec must `Requires: webkitgtk6.0`, `libadwaita` and `google-noto-color-emoji-fonts`. Keep `BuildRequires`/`Requires` in sync with what the toolbox needs. The user installs the RPM on the host (`sudo dnf install ./<file>.rpm`).
 
 ## Verification
 

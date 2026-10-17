@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=WhatsUp
+GenericName=WhatsApp Client
+Comment=Chat on WhatsApp from your desktop
+Exec=whatsup-desktop
+Icon=app.whatsup.WhatsUp
+Terminal=false
+StartupNotify=true
+StartupWMClass=app.whatsup.WhatsUp
+Categories=Network;InstantMessaging;Chat;GTK;GNOME;
+Keywords=WhatsApp;Chat;Messages;Messenger;

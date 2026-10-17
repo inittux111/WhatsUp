@@ -1,0 +1,16 @@
+[package]
+name = "whatsup-desktop"
+version = "0.1.0"
+edition = "2024"
+description = "WhatsApp Web for GNOME"
+license = "GPL-3.0-or-later"
+publish = false
+
+[dependencies]
+adw = { package = "libadwaita", version = "0.9", features = ["v1_8"] }
+gtk = { package = "gtk4", version = "0.11", features = ["v4_20"] }
+webkit = { package = "webkit6", version = "0.6", features = ["v2_50"] }
+
+[profile.release]
+lto = true
+codegen-units = 1

@@ -1,0 +1,10 @@
+/*
+ * WhatsUp's own fixes for WhatsApp Web, injected before the user's stylesheets.
+ * Only stable data-testid hooks: WhatsApp's class names are generated and change.
+ */
+
+/* WebKitGTK identifies as Safari on a Mac, so WhatsApp promotes its Mac app
+   on the welcome screen next to the chat list. */
+[data-testid="intro-panel"] [data-testid="intro_panel_v2_title_card"] {
+  display: none !important;
+}
