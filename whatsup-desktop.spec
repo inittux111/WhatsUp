@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        0.1.0
+Version:        1.0.0
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -71,5 +71,10 @@ install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/symbolic/apps \
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray-unread.svg
 
 %changelog
+* Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-1
+- First release: WhatsApp Web in a native GNOME window, with multiple
+  accounts, a tray icon, notifications, downloads, settings, editable
+  shortcuts, and colours from the system theme
+
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 0.1.0-1
 - First package
