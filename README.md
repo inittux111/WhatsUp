@@ -1,8 +1,8 @@
-# WhatsUp
+# whatsup-desktop
 
-WhatsApp Web in a native GNOME window. WhatsUp runs WhatsApp's official web
-client in WebKitGTK, inside a GTK4 + libadwaita app written in Rust for speed
-and a light footprint.
+WhatsApp Web in a native GNOME window. whatsup-desktop runs WhatsApp's
+official web client in WebKitGTK, inside a GTK4 + libadwaita app written in
+Rust for speed and a light footprint.
 
 ## Features
 
@@ -26,8 +26,8 @@ and a light footprint.
 
 ## Installing
 
-WhatsUp officially supports Fedora 43 and newer (it needs libadwaita 1.8 or
-newer). Build the RPM (see below), then:
+whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
+1.8 or newer). Build the RPM (see below), then:
 
 ```sh
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
@@ -39,15 +39,15 @@ see [Other systems](#other-systems-not-officially-supported).
 ## Settings
 
 Open Settings from the ☰ menu, the tray icon's menu, or with `Ctrl+,`. These
-are WhatsUp's own settings; WhatsApp's (privacy, chats, account) stay in
+are whatsup-desktop's own settings; WhatsApp's (privacy, chats, account) stay in
 WhatsApp's menu. Changes apply straight away.
 
 ### General
 
 | Setting | What it does | Default |
 |---|---|---|
-| Run in Background | Closing the window keeps WhatsUp running in the tray | On |
-| Start at Login | Opens WhatsUp when you log in | Off |
+| Run in Background | Closing the window keeps whatsup-desktop running in the tray | On |
+| Start at Login | Opens whatsup-desktop when you log in | Off |
 | Start in Background | When starting at login, stays hidden in the tray | On |
 | Show Tray Icon | The icon in the top bar with the unread count | On |
 | Coloured Tray Icon | Green tray icon; off matches the top bar's other icons | On |
