@@ -1,9 +1,11 @@
 //! The web view that runs WhatsApp Web, locked down to WhatsApp's own site.
 
+mod nvidia;
 mod permissions;
 mod policy;
 mod style;
 
+pub use nvidia::prepare as prepare_for_driver;
 pub use style::Extras;
 
 use gtk::prelude::*;
@@ -40,6 +42,18 @@ pub fn build(dirs: &AccountDirs, extras: Extras) -> webkit::WebView {
         None
     });
     view.connect_permission_request(permissions::decide);
+    // A crashed page keeps showing its last frame but no longer reacts to
+    // anything, so load WhatsApp again. Removing an account terminates its
+    // process on purpose (`TerminatedByApi`); that one stays closed.
+    view.connect_web_process_terminated(|view, reason| {
+        if reason != webkit::WebProcessTerminationReason::TerminatedByApi {
+            glib::g_warning!(
+                "whatsup-desktop",
+                "web process ended ({reason:?}), reloading"
+            );
+            view.load_uri(WHATSAPP_URL);
+        }
+    });
     if let Some(context) = view.context() {
         permissions::grant_notifications(&context);
     }
