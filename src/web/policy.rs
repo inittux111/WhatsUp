@@ -41,7 +41,8 @@ fn decide_navigation(
         return;
     };
     let new_window = kind == webkit::PolicyDecisionType::NewWindowAction;
-    if !new_window && (may_load_inside(&uri) || is_whatsapp_owned(&uri)) {
+    let whatsapp = may_load_inside(&uri) || is_whatsapp_owned(&uri) || is_whatsapp_blob(&uri);
+    if !new_window && whatsapp {
         decision.use_();
     } else {
         decision.ignore();
@@ -53,15 +54,21 @@ fn decide_navigation(
 
 /// The main frame only ever shows WhatsApp Web; a link that would replace
 /// it opens in the browser instead.
+/// Files WebKit can't show, and WhatsApp's own file links (`blob:`), are
+/// downloaded instead.
 fn decide_response(view: &webkit::WebView, decision: &webkit::ResponsePolicyDecision) {
-    let uri = decision.request().and_then(|request| request.uri());
-    match uri {
-        Some(uri) if decision.is_main_frame_main_resource() && !may_load_inside(&uri) => {
-            decision.ignore();
-            super::open_externally(view, &uri);
-        }
-        Some(_) => decision.use_(),
-        None => decision.ignore(),
+    let Some(uri) = decision.request().and_then(|request| request.uri()) else {
+        decision.ignore();
+        return;
+    };
+    let main_frame = decision.is_main_frame_main_resource();
+    if !decision.is_mime_type_supported() || (main_frame && is_whatsapp_blob(&uri)) {
+        decision.download();
+    } else if main_frame && !may_load_inside(&uri) {
+        decision.ignore();
+        super::open_externally(view, &uri);
+    } else {
+        decision.use_();
     }
 }
 
@@ -71,6 +78,14 @@ pub fn may_load_inside(uri: &str) -> bool {
         return true;
     }
     https_host(uri).is_some_and(|host| host == WHATSAPP_HOST)
+}
+
+/// Whether `uri` is a file WhatsApp Web made in the page, such as a photo
+/// the user saves: `blob:https://web.whatsapp.com/<id>`.
+fn is_whatsapp_blob(uri: &str) -> bool {
+    uri.strip_prefix("blob:").is_some_and(|inner| {
+        !inner.starts_with("blob:") && may_load_inside(inner) && inner != "about:blank"
+    })
 }
 
 /// Whether `uri` is on one of WhatsApp's own domains, over HTTPS.
@@ -134,6 +149,16 @@ mod tests {
         assert!(!is_whatsapp_owned("https://whatsapp.net.evil.example/"));
         assert!(!is_whatsapp_owned("https://user@flows.whatsapp.net/"));
         assert!(!is_whatsapp_owned("https://example.com/"));
+    }
+
+    #[test]
+    fn only_whatsapp_blobs_download() {
+        assert!(is_whatsapp_blob("blob:https://web.whatsapp.com/1b2c-33"));
+        assert!(!is_whatsapp_blob("blob:https://evil.example/1b2c"));
+        assert!(!is_whatsapp_blob("blob:http://web.whatsapp.com/1b2c"));
+        assert!(!is_whatsapp_blob("blob:about:blank"));
+        assert!(!is_whatsapp_blob("blob:blob:https://web.whatsapp.com/x"));
+        assert!(!is_whatsapp_blob("https://web.whatsapp.com/"));
     }
 
     #[test]

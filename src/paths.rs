@@ -31,6 +31,11 @@ pub fn css_dir() -> PathBuf {
     glib::user_config_dir().join(DIR_NAME).join("css")
 }
 
+/// The user's Downloads folder (or home, if they have none set).
+pub fn downloads_dir() -> PathBuf {
+    glib::user_special_dir(glib::UserDirectory::Downloads).unwrap_or_else(glib::home_dir)
+}
+
 /// Where development builds find the app's icons: the source tree's `data/icons`.
 /// Installed builds use the system icon theme.
 pub fn dev_icon_dir() -> Option<PathBuf> {

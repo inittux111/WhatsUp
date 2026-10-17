@@ -3,7 +3,7 @@
 use adw::prelude::*;
 use gtk::glib;
 
-use crate::{background, notifications, paths, window};
+use crate::{background, downloads, notifications, paths, window};
 
 pub const APP_ID: &str = "app.whatsup.WhatsUp";
 pub const APP_NAME: &str = "WhatsUp";
@@ -31,10 +31,11 @@ fn activate(app: &adw::Application) {
         return;
     }
     match window::build(app) {
-        Ok((window, view)) => {
-            background::attach(app, &window, &view);
-            notifications::attach(app, &window, &view);
-            window.present();
+        Ok(main) => {
+            background::attach(app, &main.window, &main.view);
+            notifications::attach(app, &main.window, &main.view);
+            downloads::attach(&main.view, &main.toasts);
+            main.window.present();
         }
         Err(err) => {
             eprintln!("{APP_NAME}: cannot prepare the account folder: {err}");

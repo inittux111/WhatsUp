@@ -7,8 +7,14 @@ use webkit::prelude::*;
 use crate::app::APP_NAME;
 use crate::{paths, web};
 
-/// The window and the web view in it.
-pub fn build(app: &adw::Application) -> std::io::Result<(adw::ApplicationWindow, webkit::WebView)> {
+/// The main window and the parts of it that other modules attach to.
+pub struct Main {
+    pub window: adw::ApplicationWindow,
+    pub view: webkit::WebView,
+    pub toasts: adw::ToastOverlay,
+}
+
+pub fn build(app: &adw::Application) -> std::io::Result<Main> {
     let dirs = paths::account_dirs("default")?;
     let view = web::build(&dirs);
 
@@ -17,7 +23,9 @@ pub fn build(app: &adw::Application) -> std::io::Result<(adw::ApplicationWindow,
 
     let content = adw::ToolbarView::new();
     content.add_top_bar(&header);
-    content.set_content(Some(&view));
+    let toasts = adw::ToastOverlay::new();
+    toasts.set_child(Some(&view));
+    content.set_content(Some(&toasts));
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
@@ -29,7 +37,11 @@ pub fn build(app: &adw::Application) -> std::io::Result<(adw::ApplicationWindow,
         .content(&content)
         .build();
     add_actions(&window, &view);
-    Ok((window, view))
+    Ok(Main {
+        window,
+        view,
+        toasts,
+    })
 }
 
 fn main_menu_button() -> gtk::MenuButton {
