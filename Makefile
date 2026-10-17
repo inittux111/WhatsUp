@@ -6,21 +6,22 @@ NAME    := whatsup-desktop
 VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 TOP     := $(CURDIR)/target/rpm
 SRC     := $(NAME)-$(VERSION)
-SPEC_VERSION := $(shell sed -n 's/^Version: *//p' $(NAME).spec)
+SPEC    := packaging/fedora/$(NAME).spec
+SPEC_VERSION := $(shell sed -n 's/^Version: *//p' $(SPEC))
 
 .PHONY: rpm sources clean-rpm deb container-deb deb-image install uninstall
 
 DEB_IMAGE := localhost/whatsup-desktop-deb-build
 
 rpm: sources
-	rpmbuild -ba --define "_topdir $(TOP)" $(NAME).spec
+	rpmbuild -ba --define "_topdir $(TOP)" $(SPEC)
 	@find $(TOP)/RPMS -name '*.rpm' -print
 
 # The source archive is the committed code (git archive), so a release's
 # tarball matches its tag exactly; commit before building.
 sources: clean-rpm
 	@test "$(VERSION)" = "$(SPEC_VERSION)" || \
-	    { echo "Cargo.toml ($(VERSION)) and $(NAME).spec ($(SPEC_VERSION)) differ"; exit 1; }
+	    { echo "Cargo.toml ($(VERSION)) and $(SPEC) ($(SPEC_VERSION)) differ"; exit 1; }
 	mkdir -p $(TOP)/SOURCES $(TOP)/vendor-tmp
 	git archive --format=tar.gz --prefix=$(SRC)/ -o $(TOP)/SOURCES/$(SRC).tar.gz HEAD
 	cargo vendor --locked --versioned-dirs $(TOP)/vendor-tmp/vendor > /dev/null
