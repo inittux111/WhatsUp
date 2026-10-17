@@ -3,12 +3,15 @@
 
 Name:           whatsup-desktop
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
 URL:            https://github.com/inittux111/whatsup-desktop
 Source0:        %{name}-%{version}.tar.gz
 Source1:        %{name}-%{version}-vendor.tar.gz
+# Early builds were packaged as whatsup, a name Fedora already uses for a
+# cluster tool; the version bound leaves that one alone.
+Obsoletes:      whatsup < 1.1
 
 BuildRequires:  cargo
 BuildRequires:  rust
@@ -68,6 +71,9 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray-unread.svg
 
 %changelog
+* Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-2
+- Replace the early builds packaged as whatsup, and move their data folders
+
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-1
 - First release: WhatsApp Web in a native GNOME window, with multiple
   accounts, a tray icon, notifications, downloads, settings, editable

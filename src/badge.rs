@@ -21,6 +21,10 @@ pub fn set_count(connection: &gio::DBusConnection, count: u32) {
         "Update",
         Some(&params),
     ) {
-        glib::g_debug!("whatsup-desktop", "cannot update the dock badge: {}", err.message());
+        glib::g_debug!(
+            "whatsup-desktop",
+            "cannot update the dock badge: {}",
+            err.message()
+        );
     }
 }

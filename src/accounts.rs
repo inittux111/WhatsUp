@@ -221,7 +221,10 @@ impl Accounts {
         let dirs = match paths::account_dirs(&account.id) {
             Ok(dirs) => dirs,
             Err(err) => {
-                glib::g_warning!("whatsup-desktop", "cannot prepare an account's folder: {err}");
+                glib::g_warning!(
+                    "whatsup-desktop",
+                    "cannot prepare an account's folder: {err}"
+                );
                 return;
             }
         };

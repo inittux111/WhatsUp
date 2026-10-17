@@ -59,7 +59,11 @@ async fn read_all(dir: &Path, extension: &str) -> Vec<String> {
         match file.load_contents_future().await {
             Ok((bytes, _)) => sources.push(String::from_utf8_lossy(&bytes).into_owned()),
             Err(err) => {
-                glib::g_warning!("whatsup-desktop", "cannot read {extension} file: {}", err.message())
+                glib::g_warning!(
+                    "whatsup-desktop",
+                    "cannot read {extension} file: {}",
+                    err.message()
+                )
             }
         }
     }

@@ -136,7 +136,11 @@ impl Inner {
             self.connection
                 .emit_signal(None, path, interface, signal, params.as_ref())
         {
-            glib::g_debug!("whatsup-desktop", "tray signal {signal} failed: {}", err.message());
+            glib::g_debug!(
+                "whatsup-desktop",
+                "tray signal {signal} failed: {}",
+                err.message()
+            );
         }
     }
 
@@ -286,6 +290,10 @@ async fn register_with_watcher(connection: gio::DBusConnection) {
         )
         .await;
     if let Err(err) = result {
-        glib::g_warning!("whatsup-desktop", "cannot show the tray icon: {}", err.message());
+        glib::g_warning!(
+            "whatsup-desktop",
+            "cannot show the tray icon: {}",
+            err.message()
+        );
     }
 }

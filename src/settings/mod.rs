@@ -40,6 +40,11 @@ impl Settings {
         let values = std::fs::read_to_string(&path)
             .map(|data| Values::parse(&data))
             .unwrap_or_default();
+        // Rewrites the entry, so one from an early build (which ran a binary
+        // called whatsup) starts this one.
+        if values.start_at_login {
+            autostart::apply(true, values.start_in_background);
+        }
         Self(Rc::new(Inner {
             values: RefCell::new(values),
             path,
@@ -109,7 +114,11 @@ impl Settings {
                 settings.0.dirty.set(false);
                 let data = settings.get().to_data();
                 if let Err(err) = write(&settings.0.path, data).await {
-                    glib::g_warning!("whatsup-desktop", "cannot save the settings: {}", err.message());
+                    glib::g_warning!(
+                        "whatsup-desktop",
+                        "cannot save the settings: {}",
+                        err.message()
+                    );
                 }
                 if !settings.0.dirty.get() {
                     break;

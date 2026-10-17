@@ -91,7 +91,10 @@ fn track(download: &webkit::Download, toasts: &adw::ToastOverlay, settings: &Set
 
 fn choose_destination(download: &webkit::Download, dir: &Path, suggested: &str) {
     if let Err(err) = std::fs::create_dir_all(dir) {
-        glib::g_warning!("whatsup-desktop", "cannot create the downloads folder: {err}");
+        glib::g_warning!(
+            "whatsup-desktop",
+            "cannot create the downloads folder: {err}"
+        );
     }
     let path = filename::unique_path(dir, &filename::sanitize(suggested), Path::exists);
     match path.to_str() {
@@ -149,7 +152,11 @@ fn announce_saved(download: &webkit::Download, toasts: &adw::ToastOverlay) {
                 gio::Cancellable::NONE,
                 |result| {
                     if let Err(err) = result {
-                        glib::g_warning!("whatsup-desktop", "cannot open a download: {}", err.message());
+                        glib::g_warning!(
+                            "whatsup-desktop",
+                            "cannot open a download: {}",
+                            err.message()
+                        );
                     }
                 },
             );
