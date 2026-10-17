@@ -1,9 +1,8 @@
 # WhatsUp
 
 WhatsApp Web in a native GNOME window. WhatsUp runs WhatsApp's official web
-client in WebKitGTK, wrapped in a GTK4 + libadwaita app written in Rust, so it
-stays responsive when you switch between a game and your desktop, even while
-sending a file.
+client in WebKitGTK, inside a GTK4 + libadwaita app written in Rust for speed
+and a light footprint.
 
 ## Features
 
