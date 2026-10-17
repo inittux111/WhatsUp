@@ -7,7 +7,8 @@ use webkit::prelude::*;
 use crate::app::APP_NAME;
 use crate::{paths, web};
 
-pub fn build(app: &adw::Application) -> std::io::Result<adw::ApplicationWindow> {
+/// The window and the web view in it.
+pub fn build(app: &adw::Application) -> std::io::Result<(adw::ApplicationWindow, webkit::WebView)> {
     let dirs = paths::account_dirs("default")?;
     let view = web::build(&dirs);
 
@@ -28,7 +29,7 @@ pub fn build(app: &adw::Application) -> std::io::Result<adw::ApplicationWindow> 
         .content(&content)
         .build();
     add_actions(&window, &view);
-    Ok(window)
+    Ok((window, view))
 }
 
 fn main_menu_button() -> gtk::MenuButton {

@@ -31,6 +31,12 @@ pub fn css_dir() -> PathBuf {
     glib::user_config_dir().join(DIR_NAME).join("css")
 }
 
+/// Where development builds find the app's icons: the source tree's `data/icons`.
+/// Installed builds use the system icon theme.
+pub fn dev_icon_dir() -> Option<PathBuf> {
+    cfg!(debug_assertions).then(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("data/icons"))
+}
+
 fn account_path(base: &Path, account: &str) -> PathBuf {
     base.join(DIR_NAME).join("accounts").join(account)
 }

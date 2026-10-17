@@ -3,7 +3,7 @@
 use adw::prelude::*;
 use gtk::glib;
 
-use crate::window;
+use crate::{background, paths, window};
 
 pub const APP_ID: &str = "app.whatsup.WhatsUp";
 pub const APP_NAME: &str = "WhatsUp";
@@ -11,6 +11,7 @@ pub const APP_NAME: &str = "WhatsUp";
 pub fn run() -> glib::ExitCode {
     glib::set_application_name(APP_NAME);
     let app = adw::Application::builder().application_id(APP_ID).build();
+    app.connect_startup(|_| add_dev_icons());
     app.connect_activate(activate);
     app.set_accels_for_action("win.reload", &["<Control>r", "F5"]);
     app.set_accels_for_action("app.quit", &["<Control>q"]);
@@ -30,10 +31,20 @@ fn activate(app: &adw::Application) {
         return;
     }
     match window::build(app) {
-        Ok(window) => window.present(),
+        Ok((window, view)) => {
+            background::attach(app, &window, &view);
+            window.present();
+        }
         Err(err) => {
             eprintln!("{APP_NAME}: cannot prepare the account folder: {err}");
             app.quit();
         }
+    }
+}
+
+/// In development builds, finds the app's icons in the source tree.
+fn add_dev_icons() {
+    if let (Some(dir), Some(display)) = (paths::dev_icon_dir(), gtk::gdk::Display::default()) {
+        gtk::IconTheme::for_display(&display).add_search_path(dir);
     }
 }

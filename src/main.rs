@@ -1,7 +1,11 @@
 //! WhatsUp: WhatsApp Web in a native GNOME window.
 
 mod app;
+mod background;
+mod badge;
 mod paths;
+mod tray;
+mod unread;
 mod web;
 mod window;
 
