@@ -48,6 +48,7 @@ pub const XML: &str = r#"<node>
 pub enum Entry {
     ShowHide = 1,
     Quit = 3,
+    Settings = 4,
 }
 
 const SEPARATOR: i32 = 2;
@@ -57,6 +58,7 @@ impl Entry {
         match id {
             1 => Some(Self::ShowHide),
             3 => Some(Self::Quit),
+            4 => Some(Self::Settings),
             _ => None,
         }
     }
@@ -71,6 +73,10 @@ pub fn layout(window_visible: bool) -> Variant {
     };
     let children = vec![
         item(Entry::ShowHide as i32, &[("label", show_hide.to_variant())]),
+        item(
+            Entry::Settings as i32,
+            &[("label", "Settings".to_variant())],
+        ),
         item(SEPARATOR, &[("type", "separator".to_variant())]),
         item(Entry::Quit as i32, &[("label", "Quit".to_variant())]),
     ];
@@ -116,6 +122,10 @@ mod tests {
             Some(Entry::ShowHide)
         );
         assert_eq!(Entry::from_id(Entry::Quit as i32), Some(Entry::Quit));
+        assert_eq!(
+            Entry::from_id(Entry::Settings as i32),
+            Some(Entry::Settings)
+        );
         assert_eq!(Entry::from_id(SEPARATOR), None);
     }
 }

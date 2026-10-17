@@ -30,6 +30,7 @@ pub fn attach(app: &adw::Application, main: &Main) {
     if let Some(tray) = &tray {
         tray.set_window_visible(window.is_visible());
         tray.set_icon_visible(main.settings.get().show_tray_icon);
+        tray.set_colored(main.settings.get().colored_tray_icon);
         let for_window = tray.clone();
         window.connect_visible_notify(move |window| {
             for_window.set_window_visible(window.is_visible());
@@ -49,6 +50,7 @@ pub fn attach(app: &adw::Application, main: &Main) {
             let values = settings.get();
             if let Some(tray) = &tray {
                 tray.set_icon_visible(values.show_tray_icon);
+                tray.set_colored(values.colored_tray_icon);
                 tray.set_unread(count.get());
             }
             badge::set_count(&connection, if values.dock_badge { count.get() } else { 0 });
@@ -70,17 +72,27 @@ fn new_tray(
     let icon_theme_path = paths::dev_icon_dir()
         .map(|dir| dir.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let toggle = glib::clone!(
-        #[weak]
-        window,
-        move || toggle(&window)
-    );
-    let quit = glib::clone!(
-        #[weak]
-        app,
-        move || app.activate_action("quit", None)
-    );
-    match tray::Tray::new(connection, icon_theme_path, toggle, quit) {
+    let actions = tray::Actions {
+        toggle: Box::new(glib::clone!(
+            #[weak]
+            window,
+            move || toggle(&window)
+        )),
+        settings: Box::new(glib::clone!(
+            #[weak]
+            window,
+            move || {
+                window.present();
+                let _ = WidgetExt::activate_action(&window, "win.preferences", None);
+            }
+        )),
+        quit: Box::new(glib::clone!(
+            #[weak]
+            app,
+            move || app.activate_action("quit", None)
+        )),
+    };
+    match tray::Tray::new(connection, icon_theme_path, actions) {
         Ok(tray) => Some(tray),
         Err(err) => {
             glib::g_warning!("whatsup-desktop", "no tray icon: {}", err.message());

@@ -13,6 +13,14 @@ use gtk::glib::{self, Variant, prelude::*};
 
 const WATCHER: &str = "org.kde.StatusNotifierWatcher";
 
+/// What the icon does; each runs from the main loop, never inside a D-Bus call.
+pub struct Actions {
+    /// Shows or hides the window: a click on the icon, or Show/Hide.
+    pub toggle: Box<dyn Fn()>,
+    pub settings: Box<dyn Fn()>,
+    pub quit: Box<dyn Fn()>,
+}
+
 pub struct Tray {
     inner: Rc<Inner>,
 }
@@ -21,33 +29,31 @@ struct Inner {
     connection: gio::DBusConnection,
     icon_theme_path: String,
     state: RefCell<State>,
-    on_toggle: Box<dyn Fn()>,
-    on_quit: Box<dyn Fn()>,
+    actions: Actions,
 }
 
 #[derive(Default)]
 struct State {
     unread: u32,
     hidden: bool,
+    /// The green icon rather than the symbolic one.
+    colored: bool,
     window_visible: bool,
     revision: u32,
 }
 
 impl Tray {
-    /// Puts the icon on `connection`. `on_toggle` shows or hides the window,
-    /// `on_quit` quits the app; both run from the main loop, never re-entrantly.
+    /// Puts the icon on `connection`; its clicks and menu run `actions`.
     pub fn new(
         connection: &gio::DBusConnection,
         icon_theme_path: String,
-        on_toggle: impl Fn() + 'static,
-        on_quit: impl Fn() + 'static,
+        actions: Actions,
     ) -> Result<Self, glib::Error> {
         let inner = Rc::new(Inner {
             connection: connection.clone(),
             icon_theme_path,
             state: RefCell::default(),
-            on_toggle: Box::new(on_toggle),
-            on_quit: Box::new(on_quit),
+            actions,
         });
         register_item(&inner)?;
         register_menu(&inner)?;
@@ -74,6 +80,18 @@ impl Tray {
         };
         if changed {
             self.announce();
+        }
+    }
+
+    /// Shows the green icon, or the symbolic one that follows the theme.
+    pub fn set_colored(&self, colored: bool) {
+        let changed = {
+            let mut state = self.inner.state.borrow_mut();
+            std::mem::replace(&mut state.colored, colored) != colored
+        };
+        if changed {
+            self.announce();
+            self.inner.emit_item("NewAttentionIcon", None);
         }
     }
 
@@ -147,7 +165,7 @@ fn register_item(inner: &Rc<Inner>) -> Result<(), glib::Error> {
         .register_object(item::OBJECT_PATH, &info)
         .method_call(move |_, _, _, _, method, _, invocation| {
             if matches!(method, "Activate" | "SecondaryActivate") {
-                Inner::later(&for_calls, |inner| (inner.on_toggle)());
+                Inner::later(&for_calls, |inner| (inner.actions.toggle)());
             }
             invocation.return_value(None);
         })
@@ -155,11 +173,11 @@ fn register_item(inner: &Rc<Inner>) -> Result<(), glib::Error> {
             let Some(inner) = for_props.upgrade() else {
                 return "".to_variant();
             };
-            let (unread, hidden) = {
+            let (unread, hidden, colored) = {
                 let state = inner.state.borrow();
-                (state.unread, state.hidden)
+                (state.unread, state.hidden, state.colored)
             };
-            item::property(name, unread, hidden, &inner.icon_theme_path)
+            item::property(name, unread, hidden, colored, &inner.icon_theme_path)
                 .unwrap_or_else(|| "".to_variant())
         })
         .build()?;
@@ -230,8 +248,9 @@ fn menu_event(inner: &Weak<Inner>, id: i32, event: &str) {
         return;
     }
     match menu::Entry::from_id(id) {
-        Some(menu::Entry::ShowHide) => Inner::later(inner, |inner| (inner.on_toggle)()),
-        Some(menu::Entry::Quit) => Inner::later(inner, |inner| (inner.on_quit)()),
+        Some(menu::Entry::ShowHide) => Inner::later(inner, |inner| (inner.actions.toggle)()),
+        Some(menu::Entry::Settings) => Inner::later(inner, |inner| (inner.actions.settings)()),
+        Some(menu::Entry::Quit) => Inner::later(inner, |inner| (inner.actions.quit)()),
         None => {}
     }
 }

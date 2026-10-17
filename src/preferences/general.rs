@@ -45,13 +45,23 @@ fn background(settings: &Settings, values: &Values) -> adw::PreferencesGroup {
 
 fn tray(settings: &Settings, values: &Values) -> adw::PreferencesGroup {
     let group = group("Tray and App Icon");
-    group.add(&switch(
+    let show = switch(
         "Show Tray Icon",
         "The icon in the top bar that shows unread chats",
         values.show_tray_icon,
         settings,
         |v, on| v.show_tray_icon = on,
-    ));
+    );
+    let colored = switch(
+        "Coloured Tray Icon",
+        "Green; when off, the icon matches the top bar's other icons",
+        values.colored_tray_icon,
+        settings,
+        |v, on| v.colored_tray_icon = on,
+    );
+    depends_on(&colored, &show);
+    group.add(&show);
+    group.add(&colored);
     group.add(&switch(
         "Show Unread Count on App Icon",
         "In docks that show one, such as Dash to Dock",

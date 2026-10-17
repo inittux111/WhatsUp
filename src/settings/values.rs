@@ -21,6 +21,8 @@ pub struct Values {
     /// When started at login, start hidden in the tray.
     pub start_in_background: bool,
     pub show_tray_icon: bool,
+    /// The tray icon in green, rather than symbolic in the top bar's colour.
+    pub colored_tray_icon: bool,
     /// The unread count on the app's icon, in docks that show one.
     pub dock_badge: bool,
     pub notifications: bool,
@@ -61,6 +63,7 @@ impl Default for Values {
             start_at_login: false,
             start_in_background: true,
             show_tray_icon: true,
+            colored_tray_icon: true,
             dock_badge: true,
             notifications: true,
             notification_previews: true,
@@ -104,6 +107,7 @@ impl Values {
         v.start_at_login = flag(GENERAL, "start-at-login", v.start_at_login);
         v.start_in_background = flag(GENERAL, "start-in-background", v.start_in_background);
         v.show_tray_icon = flag(GENERAL, "tray-icon", v.show_tray_icon);
+        v.colored_tray_icon = flag(GENERAL, "colored-tray-icon", v.colored_tray_icon);
         v.dock_badge = flag(GENERAL, "dock-badge", v.dock_badge);
         v.notifications = flag(NOTIFICATIONS, "enabled", v.notifications);
         v.notification_previews = flag(NOTIFICATIONS, "previews", v.notification_previews);
@@ -158,6 +162,7 @@ impl Values {
         file.set_boolean(GENERAL, "start-at-login", self.start_at_login);
         file.set_boolean(GENERAL, "start-in-background", self.start_in_background);
         file.set_boolean(GENERAL, "tray-icon", self.show_tray_icon);
+        file.set_boolean(GENERAL, "colored-tray-icon", self.colored_tray_icon);
         file.set_boolean(GENERAL, "dock-badge", self.dock_badge);
         file.set_boolean(NOTIFICATIONS, "enabled", self.notifications);
         file.set_boolean(NOTIFICATIONS, "previews", self.notification_previews);
@@ -215,6 +220,7 @@ mod tests {
             start_at_login: true,
             start_in_background: false,
             show_tray_icon: false,
+            colored_tray_icon: false,
             dock_badge: false,
             notifications: false,
             notification_previews: false,

@@ -8,3 +8,16 @@
 [data-testid="intro-panel"] [data-testid="intro_panel_v2_title_card"] {
   display: none !important;
 }
+
+/* The same promotion on the QR login screen: a framed card with "Download
+   WhatsApp for Mac", a "Get the app" link and a Download button, two to four
+   levels above the button. Nothing that holds part of the login itself (the
+   QR code, the phone number link: their test ids start with "link_device" or
+   "link-device") is ever hidden, whatever WhatsApp changes in its layout. */
+:is(
+  div:has(> div > [data-testid="download-native-client-button"]),
+  div:has(> div > div > [data-testid="download-native-client-button"]),
+  div:has(> div > div > div > [data-testid="download-native-client-button"])
+):not(:has([data-testid^="link_device"], [data-testid^="link-device"])) {
+  display: none !important;
+}

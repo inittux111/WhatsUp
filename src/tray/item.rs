@@ -30,8 +30,21 @@ pub const XML: &str = r#"<node>
   </interface>
 </node>"#;
 
-const ICON: &str = "app.whatsup.WhatsUp-symbolic";
-const UNREAD_ICON: &str = "app.whatsup.WhatsUp-unread-symbolic";
+/// The icon and its unread variant: in colour (green), or symbolic, which
+/// GNOME paints in the top bar's own colour to match the theme.
+pub fn icons(colored: bool) -> (&'static str, &'static str) {
+    if colored {
+        (
+            "app.whatsup.WhatsUp-tray",
+            "app.whatsup.WhatsUp-tray-unread",
+        )
+    } else {
+        (
+            "app.whatsup.WhatsUp-symbolic",
+            "app.whatsup.WhatsUp-unread-symbolic",
+        )
+    }
+}
 
 /// The icon's state: "Passive" hides it, and with unread chats the tray
 /// shows the attention icon.
@@ -54,19 +67,26 @@ pub fn tooltip_text(unread: u32) -> String {
 }
 
 /// The value of property `name`, for `unread` unread chats.
-pub fn property(name: &str, unread: u32, hidden: bool, icon_theme_path: &str) -> Option<Variant> {
+pub fn property(
+    name: &str,
+    unread: u32,
+    hidden: bool,
+    colored: bool,
+    icon_theme_path: &str,
+) -> Option<Variant> {
     let empty_pixmaps: Vec<(i32, i32, Vec<u8>)> = Vec::new();
+    let (icon, unread_icon) = icons(colored);
     Some(match name {
         "Category" => "Communications".to_variant(),
         "Id" => crate::app::APP_ID.to_variant(),
         "Title" => crate::app::APP_NAME.to_variant(),
         "Status" => status(unread, hidden).to_variant(),
         "WindowId" => 0i32.to_variant(),
-        "IconName" => ICON.to_variant(),
-        "AttentionIconName" => UNREAD_ICON.to_variant(),
+        "IconName" => icon.to_variant(),
+        "AttentionIconName" => unread_icon.to_variant(),
         "IconThemePath" => icon_theme_path.to_variant(),
         "ToolTip" => (
-            ICON,
+            icon,
             empty_pixmaps,
             crate::app::APP_NAME,
             tooltip_text(unread),
@@ -95,9 +115,18 @@ mod tests {
     }
 
     #[test]
+    fn icons_follow_the_colour_choice() {
+        let name = |colored| property("IconName", 0, false, colored, "").unwrap();
+        assert_eq!(name(true).str(), Some("app.whatsup.WhatsUp-tray"));
+        assert_eq!(name(false).str(), Some("app.whatsup.WhatsUp-symbolic"));
+        let unread = property("AttentionIconName", 1, false, false, "").unwrap();
+        assert_eq!(unread.str(), Some("app.whatsup.WhatsUp-unread-symbolic"));
+    }
+
+    #[test]
     fn properties_have_their_dbus_types() {
         let ty = |name| {
-            property(name, 1, false, "")
+            property(name, 1, false, true, "")
                 .unwrap()
                 .type_()
                 .as_str()
@@ -106,6 +135,6 @@ mod tests {
         assert_eq!(ty("ToolTip"), "(sa(iiay)ss)");
         assert_eq!(ty("Menu"), "o");
         assert_eq!(ty("WindowId"), "i");
-        assert!(property("Nonexistent", 0, false, "").is_none());
+        assert!(property("Nonexistent", 0, false, true, "").is_none());
     }
 }

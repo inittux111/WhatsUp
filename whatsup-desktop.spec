@@ -53,6 +53,9 @@ install -Dm0644 data/app.whatsup.WhatsUp.metainfo.xml \
     %{buildroot}%{_metainfodir}/app.whatsup.WhatsUp.metainfo.xml
 install -Dm0644 data/icons/app.whatsup.WhatsUp.svg \
     %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp.svg
+install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/scalable/apps \
+    data/icons/app.whatsup.WhatsUp-tray.svg \
+    data/icons/app.whatsup.WhatsUp-tray-unread.svg
 install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/symbolic/apps \
     data/icons/app.whatsup.WhatsUp-symbolic.svg \
     data/icons/app.whatsup.WhatsUp-unread-symbolic.svg
@@ -64,6 +67,8 @@ install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/symbolic/apps \
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp.svg
 %{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-symbolic.svg
 %{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-unread-symbolic.svg
+%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray.svg
+%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray-unread.svg
 
 %changelog
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 0.1.0-1
