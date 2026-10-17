@@ -5,8 +5,8 @@ use gtk::gio;
 use gtk::glib::{self, Variant, prelude::*};
 use std::collections::HashMap;
 
-const OBJECT_PATH: &str = "/app/whatsup/WhatsUp/LauncherEntry";
-const APP_URI: &str = "application://app.whatsup.WhatsUp.desktop";
+const OBJECT_PATH: &str = "/app/whatsup_desktop/WhatsUp/LauncherEntry";
+const APP_URI: &str = "application://app.whatsup_desktop.WhatsUp.desktop";
 
 pub fn set_count(connection: &gio::DBusConnection, count: u32) {
     let props = HashMap::from([

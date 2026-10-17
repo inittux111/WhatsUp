@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>app.whatsup.WhatsUp</id>
+  <id>app.whatsup_desktop.WhatsUp</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>WhatsUp</name>
@@ -12,7 +12,10 @@
   <developer id="io.github.inittux111">
     <name>inittux111</name>
   </developer>
-  <launchable type="desktop-id">app.whatsup.WhatsUp.desktop</launchable>
+  <launchable type="desktop-id">app.whatsup_desktop.WhatsUp.desktop</launchable>
+  <provides>
+    <id>app.whatsup.WhatsUp</id>
+  </provides>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="1.0.0" date="2026-10-17"/>

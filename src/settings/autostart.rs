@@ -9,6 +9,8 @@ use crate::app::{APP_ID, APP_NAME};
 
 /// The flag the autostart entry passes to start hidden in the tray.
 pub const BACKGROUND_FLAG: &str = "background";
+/// The app ID of early builds, which named their entry after it.
+const OLD_APP_ID: &str = "app.whatsup.WhatsUp";
 
 pub fn apply(enabled: bool, hidden: bool) {
     let file = gio::File::for_path(
@@ -55,6 +57,25 @@ async fn write(file: &gio::File, data: String) -> Result<(), glib::Error> {
         .await
         .map(|_| ())
         .map_err(|(_, err)| err)
+}
+
+/// Deletes the entry an early build wrote under its old app ID, in the
+/// background, so the app doesn't start twice at login.
+pub fn remove_old() {
+    let file = gio::File::for_path(
+        glib::user_config_dir()
+            .join("autostart")
+            .join(format!("{OLD_APP_ID}.desktop")),
+    );
+    glib::spawn_future_local(async move {
+        if let Err(err) = remove(&file).await {
+            glib::g_warning!(
+                "whatsup-desktop",
+                "cannot remove the old login entry: {}",
+                err.message()
+            );
+        }
+    });
 }
 
 async fn remove(file: &gio::File) -> Result<(), glib::Error> {

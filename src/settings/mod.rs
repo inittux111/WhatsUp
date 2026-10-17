@@ -41,7 +41,8 @@ impl Settings {
             .map(|data| Values::parse(&data))
             .unwrap_or_default();
         // Rewrites the entry, so one from an early build (which ran a binary
-        // called whatsup) starts this one.
+        // called whatsup, under another app ID) starts this one, once.
+        autostart::remove_old();
         if values.start_at_login {
             autostart::apply(true, values.start_in_background);
         }

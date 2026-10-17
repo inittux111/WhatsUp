@@ -8,7 +8,7 @@ use gtk::glib;
 use crate::settings::{self, Settings};
 use crate::{background, downloads, notifications, paths, window};
 
-pub const APP_ID: &str = "app.whatsup.WhatsUp";
+pub const APP_ID: &str = "app.whatsup_desktop.WhatsUp";
 pub const APP_NAME: &str = "WhatsUp";
 
 pub fn run() -> glib::ExitCode {

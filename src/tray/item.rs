@@ -35,13 +35,13 @@ pub const XML: &str = r#"<node>
 pub fn icons(colored: bool) -> (&'static str, &'static str) {
     if colored {
         (
-            "app.whatsup.WhatsUp-tray",
-            "app.whatsup.WhatsUp-tray-unread",
+            "app.whatsup_desktop.WhatsUp-tray",
+            "app.whatsup_desktop.WhatsUp-tray-unread",
         )
     } else {
         (
-            "app.whatsup.WhatsUp-symbolic",
-            "app.whatsup.WhatsUp-unread-symbolic",
+            "app.whatsup_desktop.WhatsUp-symbolic",
+            "app.whatsup_desktop.WhatsUp-unread-symbolic",
         )
     }
 }
@@ -117,10 +117,16 @@ mod tests {
     #[test]
     fn icons_follow_the_colour_choice() {
         let name = |colored| property("IconName", 0, false, colored, "").unwrap();
-        assert_eq!(name(true).str(), Some("app.whatsup.WhatsUp-tray"));
-        assert_eq!(name(false).str(), Some("app.whatsup.WhatsUp-symbolic"));
+        assert_eq!(name(true).str(), Some("app.whatsup_desktop.WhatsUp-tray"));
+        assert_eq!(
+            name(false).str(),
+            Some("app.whatsup_desktop.WhatsUp-symbolic")
+        );
         let unread = property("AttentionIconName", 1, false, false, "").unwrap();
-        assert_eq!(unread.str(), Some("app.whatsup.WhatsUp-unread-symbolic"));
+        assert_eq!(
+            unread.str(),
+            Some("app.whatsup_desktop.WhatsUp-unread-symbolic")
+        );
     }
 
     #[test]

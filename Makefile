@@ -50,7 +50,7 @@ deb-image:
 # it lives on the system (/usr for packages, /usr/local by hand).
 PREFIX  ?= /usr/local
 BINARY  ?= target/release/$(NAME)
-APP_ID  := app.whatsup.WhatsUp
+APP_ID  := app.whatsup_desktop.WhatsUp
 SHARE   := $(DESTDIR)$(PREFIX)/share
 SCALABLE_ICONS := $(APP_ID).svg $(APP_ID)-tray.svg $(APP_ID)-tray-unread.svg
 SYMBOLIC_ICONS := $(APP_ID)-symbolic.svg $(APP_ID)-unread-symbolic.svg

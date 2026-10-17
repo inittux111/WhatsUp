@@ -54,25 +54,26 @@ cargo build --release --offline --locked
 
 %check
 cargo test --release --offline --locked
-desktop-file-validate data/app.whatsup.WhatsUp.desktop
-appstream-util validate-relax --nonet data/app.whatsup.WhatsUp.metainfo.xml
+desktop-file-validate data/app.whatsup_desktop.WhatsUp.desktop
+appstream-util validate-relax --nonet data/app.whatsup_desktop.WhatsUp.metainfo.xml
 
 %install
 make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 
 %files
 %{_bindir}/%{name}
-%{_datadir}/applications/app.whatsup.WhatsUp.desktop
-%{_datadir}/metainfo/app.whatsup.WhatsUp.metainfo.xml
-%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp.svg
-%{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-symbolic.svg
-%{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-unread-symbolic.svg
-%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray.svg
-%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp-tray-unread.svg
+%{_datadir}/applications/app.whatsup_desktop.WhatsUp.desktop
+%{_datadir}/metainfo/app.whatsup_desktop.WhatsUp.metainfo.xml
+%{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp.svg
+%{_datadir}/icons/hicolor/symbolic/apps/app.whatsup_desktop.WhatsUp-symbolic.svg
+%{_datadir}/icons/hicolor/symbolic/apps/app.whatsup_desktop.WhatsUp-unread-symbolic.svg
+%{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray.svg
+%{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-2
 - Replace the early builds packaged as whatsup, and move their data folders
+- New app ID: app.whatsup_desktop.WhatsUp
 
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-1
 - First release: WhatsApp Web in a native GNOME window, with multiple
