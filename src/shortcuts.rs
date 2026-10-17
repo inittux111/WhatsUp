@@ -25,6 +25,14 @@ pub const GENERAL: [Entry; 4] = [
     entry("Close Window", "win.close", &["<Control>w"]),
     entry("Quit", "app.quit", &["<Control>q"]),
 ];
+pub const ACCOUNTS: [Entry; 2] = [
+    entry("Next Account", "win.next-account", &["<Control>Page_Down"]),
+    entry(
+        "Previous Account",
+        "win.previous-account",
+        &["<Control>Page_Up"],
+    ),
+];
 pub const VIEW: [Entry; 4] = [
     entry(
         "Zoom In",
@@ -49,7 +57,7 @@ const fn entry(
 }
 
 pub fn all() -> impl Iterator<Item = &'static Entry> {
-    GENERAL.iter().chain(VIEW.iter())
+    GENERAL.iter().chain(ACCOUNTS.iter()).chain(VIEW.iter())
 }
 
 /// The keys `entry` uses now: the user's choice, or its defaults.
@@ -143,6 +151,7 @@ pub fn resume(app: &adw::Application, settings: &Settings) {
 pub fn show(window: &adw::ApplicationWindow, values: &Values) {
     let dialog = adw::ShortcutsDialog::new();
     dialog.add(section("General", &GENERAL, values));
+    dialog.add(section("Accounts", &ACCOUNTS, values));
     dialog.add(section("View", &VIEW, values));
     dialog.present(Some(window));
 }

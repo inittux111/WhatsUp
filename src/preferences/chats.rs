@@ -15,6 +15,7 @@ pub fn page(
     page.add(&zoom(settings, values));
     page.add(&spelling(settings, values));
     page.add(&super::downloads::group(window, settings, values));
+    page.add(&super::custom::group_for(settings, values));
     page
 }
 

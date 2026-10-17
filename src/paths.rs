@@ -31,6 +31,33 @@ pub fn settings_file() -> PathBuf {
     glib::user_config_dir().join(DIR_NAME).join("settings.ini")
 }
 
+/// Deletes `account`'s data and cache folders, in the background. Only ever
+/// for an id that passed `settings::accounts::is_id`, so the paths stay
+/// inside WhatsUp's accounts folders.
+pub fn remove_account_data(account: &str) {
+    if !crate::settings::accounts::is_id(account) {
+        return;
+    }
+    let dirs = [
+        account_path(&glib::user_data_dir(), account),
+        account_path(&glib::user_cache_dir(), account),
+    ];
+    gtk::gio::spawn_blocking(move || {
+        for dir in dirs {
+            if let Err(err) = fs::remove_dir_all(&dir)
+                && err.kind() != io::ErrorKind::NotFound
+            {
+                glib::g_warning!("whatsup-desktop", "cannot remove an account's data: {err}");
+            }
+        }
+    });
+}
+
+/// The folder holding the user's own scripts for WhatsApp Web.
+pub fn js_dir() -> PathBuf {
+    glib::user_config_dir().join(DIR_NAME).join("js")
+}
+
 /// The folder holding the user's own stylesheets for WhatsApp Web.
 pub fn css_dir() -> PathBuf {
     glib::user_config_dir().join(DIR_NAME).join("css")

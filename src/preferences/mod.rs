@@ -2,7 +2,9 @@
 //! stay in WhatsApp's own menu). Every row writes its setting straight away,
 //! as GNOME apps do; there's no Apply button.
 
+mod accounts;
 mod chats;
+mod custom;
 mod downloads;
 mod general;
 mod keys;
@@ -20,6 +22,7 @@ pub fn show(window: &adw::ApplicationWindow, settings: &Settings) {
         .build();
     dialog.add(&general::page(settings, &values));
     dialog.add(&chats::page(window, settings, &values));
+    dialog.add(&accounts::page(settings));
     if let Some(app) = window.application().and_downcast::<adw::Application>() {
         dialog.add(&keys::page(&app, settings));
     }

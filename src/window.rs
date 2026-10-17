@@ -1,33 +1,34 @@
-//! The main window: a slim header bar above WhatsApp Web.
+//! The main window: a slim header bar above WhatsApp Web, one page per
+//! account; with several accounts, the header switches between them.
 
 use adw::prelude::*;
 use gtk::{gio, glib};
-use webkit::prelude::*;
 
+use crate::accounts::Accounts;
 use crate::app::APP_NAME;
 use crate::settings::Settings;
-use crate::{paths, preferences, shortcuts, web};
+use crate::{preferences, shortcuts};
 
 /// The main window and the parts of it that other modules attach to.
 pub struct Main {
     pub window: adw::ApplicationWindow,
-    pub view: webkit::WebView,
+    pub accounts: Accounts,
     pub toasts: adw::ToastOverlay,
     pub settings: Settings,
 }
 
-pub fn build(app: &adw::Application, settings: Settings) -> std::io::Result<Main> {
-    let dirs = paths::account_dirs("default")?;
-    let view = web::build(&dirs);
-    web::follow_settings(&view, &settings);
+pub fn build(app: &adw::Application, settings: Settings) -> Main {
+    let stack = adw::ViewStack::new();
+    let accounts = Accounts::new(&stack, &settings);
 
     let header = adw::HeaderBar::new();
     header.pack_end(&main_menu_button(&settings));
+    follow_account_count(&header, &stack, &accounts, &settings);
 
     let content = adw::ToolbarView::new();
     content.add_top_bar(&header);
     let toasts = adw::ToastOverlay::new();
-    toasts.set_child(Some(&view));
+    toasts.set_child(Some(&stack));
     content.set_content(Some(&toasts));
 
     let window = adw::ApplicationWindow::builder()
@@ -40,7 +41,7 @@ pub fn build(app: &adw::Application, settings: Settings) -> std::io::Result<Main
         .height_request(400)
         .content(&content)
         .build();
-    add_actions(&window, &view, &settings);
+    add_actions(&window, &accounts, &settings);
     window.connect_close_request(glib::clone!(
         #[strong]
         settings,
@@ -50,12 +51,42 @@ pub fn build(app: &adw::Application, settings: Settings) -> std::io::Result<Main
         }
     ));
     shortcuts::follow(app, &window, &settings);
-    Ok(Main {
+    Main {
         window,
-        view,
+        accounts,
         toasts,
         settings,
-    })
+    }
+}
+
+/// With one account the header shows the app's name; with more, a switcher
+/// with each account's name and unread count.
+fn follow_account_count(
+    header: &adw::HeaderBar,
+    stack: &adw::ViewStack,
+    accounts: &Accounts,
+    settings: &Settings,
+) {
+    let switcher = adw::ViewSwitcher::builder()
+        .stack(stack)
+        .policy(adw::ViewSwitcherPolicy::Wide)
+        .build();
+    let title = adw::WindowTitle::new(APP_NAME, "");
+    let apply = glib::clone!(
+        #[weak]
+        header,
+        #[strong]
+        accounts,
+        move || {
+            if accounts.several() {
+                header.set_title_widget(Some(&switcher));
+            } else {
+                header.set_title_widget(Some(&title));
+            }
+        }
+    );
+    apply();
+    settings.connect_changed(move |_| apply());
 }
 
 /// The ☰ menu; it follows the "Show Zoom in Menu" setting.
@@ -114,12 +145,31 @@ fn main_menu(with_zoom: bool) -> gio::Menu {
     menu
 }
 
-fn add_actions(window: &adw::ApplicationWindow, view: &webkit::WebView, settings: &Settings) {
+fn add_actions(window: &adw::ApplicationWindow, accounts: &Accounts, settings: &Settings) {
     let reload = gio::ActionEntry::builder("reload")
         .activate(glib::clone!(
-            #[weak]
-            view,
-            move |_: &adw::ApplicationWindow, _, _| view.reload()
+            #[strong]
+            accounts,
+            move |_: &adw::ApplicationWindow, _, _| {
+                if let Some(session) = accounts.current() {
+                    webkit::prelude::WebViewExt::reload(&session.view);
+                }
+            }
+        ))
+        .build();
+    let cycle = |name: &str, step: isize| {
+        let accounts = accounts.clone();
+        gio::ActionEntry::builder(name)
+            .activate(move |_: &adw::ApplicationWindow, _, _| accounts.cycle(step))
+            .build()
+    };
+    let next_account = cycle("next-account", 1);
+    let previous_account = cycle("previous-account", -1);
+    let customizations = gio::ActionEntry::builder("reload-customizations")
+        .activate(glib::clone!(
+            #[strong]
+            accounts,
+            move |_: &adw::ApplicationWindow, _, _| accounts.reload_customizations()
         ))
         .build();
     let about = gio::ActionEntry::builder("about")
@@ -155,6 +205,9 @@ fn add_actions(window: &adw::ApplicationWindow, view: &webkit::WebView, settings
     let zoom_reset = zoom("zoom-reset", |_| 1.0);
     window.add_action_entries([
         reload,
+        next_account,
+        previous_account,
+        customizations,
         about,
         preferences,
         shortcuts,

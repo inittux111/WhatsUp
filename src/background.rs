@@ -5,13 +5,12 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk::glib;
-use webkit::prelude::*;
 
 use crate::window::Main;
-use crate::{badge, paths, tray, unread};
+use crate::{badge, paths, tray};
 
 pub fn attach(app: &adw::Application, main: &Main) {
-    let (window, view) = (&main.window, &main.view);
+    let window = &main.window;
     let settings = main.settings.clone();
     window.connect_close_request(move |window| {
         if !settings.get().run_in_background {
@@ -57,11 +56,8 @@ pub fn attach(app: &adw::Application, main: &Main) {
     );
     let on_change = update.clone();
     main.settings.connect_changed(move |_| on_change());
-    view.connect_title_notify(move |view| {
-        count.set(
-            view.title()
-                .map_or(0, |title| unread::count_from_title(&title)),
-        );
+    main.accounts.connect_unread(move |total| {
+        count.set(total);
         update();
     });
 }

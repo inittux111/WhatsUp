@@ -16,14 +16,21 @@ use crate::settings::Settings;
 use crate::window::Main;
 
 pub fn attach(main: &Main) {
-    let Some(session) = main.view.network_session() else {
-        return;
-    };
     let settings = main.settings.clone();
-    session.connect_download_started(glib::clone!(
+    main.accounts.on_session(glib::clone!(
         #[weak(rename_to = toasts)]
         main.toasts,
-        move |_, download| track(download, &toasts, &settings)
+        move |session| {
+            let Some(network) = session.view.network_session() else {
+                return;
+            };
+            let settings = settings.clone();
+            network.connect_download_started(glib::clone!(
+                #[weak]
+                toasts,
+                move |_, download| track(download, &toasts, &settings)
+            ));
+        }
     ));
 }
 

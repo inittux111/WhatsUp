@@ -51,20 +51,13 @@ fn activate(app: &adw::Application) {
         window.present();
         return;
     }
-    match window::build(app, Settings::load()) {
-        Ok(main) => {
-            MAIN_SETTINGS.with(|s| s.replace(Some(main.settings.clone())));
-            background::attach(app, &main);
-            notifications::attach(app, &main);
-            downloads::attach(&main);
-            if !START_HIDDEN.replace(false) {
-                main.window.present();
-            }
-        }
-        Err(err) => {
-            eprintln!("{APP_NAME}: cannot prepare the account folder: {err}");
-            app.quit();
-        }
+    let main = window::build(app, Settings::load());
+    MAIN_SETTINGS.with(|s| s.replace(Some(main.settings.clone())));
+    background::attach(app, &main);
+    notifications::attach(app, &main);
+    downloads::attach(&main);
+    if !START_HIDDEN.replace(false) {
+        main.window.present();
     }
 }
 

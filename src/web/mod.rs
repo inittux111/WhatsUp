@@ -13,10 +13,11 @@ use crate::paths::AccountDirs;
 pub const WHATSAPP_URL: &str = "https://web.whatsapp.com/";
 
 /// Builds a web view for one account and starts loading WhatsApp Web.
-pub fn build(dirs: &AccountDirs) -> webkit::WebView {
+/// `scripts` runs the user's own scripts in it.
+pub fn build(dirs: &AccountDirs, scripts: bool) -> webkit::WebView {
     let session = webkit::NetworkSession::new(dirs.data.to_str(), dirs.cache.to_str());
     let content = webkit::UserContentManager::new();
-    style::load(&content);
+    style::load(&content, scripts);
 
     let view = webkit::WebView::builder()
         .network_session(&session)
@@ -43,6 +44,19 @@ pub fn build(dirs: &AccountDirs) -> webkit::WebView {
 
     view.load_uri(WHATSAPP_URL);
     view
+}
+
+/// Loads the stylesheets (and scripts, if `scripts`) again and reloads the
+/// page, so changes to them show.
+pub fn reload_customizations(view: &webkit::WebView, scripts: bool) {
+    let Some(content) = view.user_content_manager() else {
+        return;
+    };
+    let view = view.clone();
+    glib::spawn_future_local(async move {
+        style::apply(content, scripts).await;
+        view.reload();
+    });
 }
 
 /// Applies the zoom and spell checking settings now and whenever they change.

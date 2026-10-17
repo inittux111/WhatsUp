@@ -2,6 +2,7 @@
 //! every change, and announced to the parts of the app that follow them.
 
 pub mod accel;
+pub mod accounts;
 mod autostart;
 mod values;
 

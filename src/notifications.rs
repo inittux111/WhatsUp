@@ -1,6 +1,6 @@
 //! WhatsApp Web's notifications as GNOME notifications, so they follow the
 //! desktop's Do Not Disturb and per-app settings. Clicking one brings the
-//! window to the front and lets WhatsApp open that chat.
+//! window to the front on that account and lets WhatsApp open the chat.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -10,43 +10,58 @@ use adw::prelude::*;
 use gtk::{gio, glib};
 use webkit::prelude::*;
 
+use crate::accounts::{Accounts, Session};
 use crate::settings::Settings;
 use crate::window::Main;
 
 const OPEN_ACTION: &str = "open-notification";
 
-/// The notifications on screen, by their GNotification id.
-type Shown = Rc<RefCell<HashMap<String, webkit::Notification>>>;
+/// The notifications on screen, by their GNotification id, with their account.
+type Shown = Rc<RefCell<HashMap<String, (String, webkit::Notification)>>>;
 
 pub fn attach(app: &adw::Application, main: &Main) {
-    let (window, view, settings) = (&main.window, &main.view, main.settings.clone());
     let shown = Shown::default();
 
     let open = gio::SimpleAction::new(OPEN_ACTION, Some(glib::VariantTy::STRING));
     open.connect_activate(glib::clone!(
-        #[weak]
-        window,
+        #[weak(rename_to = window)]
+        main.window,
+        #[strong(rename_to = accounts)]
+        main.accounts,
         #[strong]
         shown,
         move |_, param| {
             window.present();
             let id = param.and_then(|p| p.str().map(str::to_owned));
-            let notification = id.and_then(|id| shown.borrow_mut().remove(&id));
-            if let Some(notification) = notification {
+            let entry = id.and_then(|id| shown.borrow_mut().remove(&id));
+            if let Some((account, notification)) = entry {
+                accounts.show(&account);
                 notification.clicked();
             }
         }
     ));
     app.add_action(&open);
 
-    view.connect_show_notification(glib::clone!(
+    let settings = main.settings.clone();
+    let accounts = main.accounts.clone();
+    main.accounts.on_session(glib::clone!(
         #[weak]
         app,
-        #[upgrade_or]
-        false,
-        move |_, notification| {
-            show(&app, &shown, &settings, notification);
-            true
+        move |session| {
+            let session_ref = Rc::downgrade(session);
+            let (shown, settings, accounts) = (shown.clone(), settings.clone(), accounts.clone());
+            session.view.connect_show_notification(glib::clone!(
+                #[weak]
+                app,
+                #[upgrade_or]
+                false,
+                move |_, notification| {
+                    if let Some(session) = session_ref.upgrade() {
+                        show(&app, &shown, &settings, &accounts, &session, notification);
+                    }
+                    true
+                }
+            ));
         }
     ));
 }
@@ -55,22 +70,27 @@ fn show(
     app: &adw::Application,
     shown: &Shown,
     settings: &Settings,
+    accounts: &Accounts,
+    session: &Session,
     notification: &webkit::Notification,
 ) {
-    if !settings.get().notifications {
+    let values = settings.get();
+    if !values.notifications {
         return;
     }
-    let id = format!("message-{}", notification.id());
+    let id = format!("message-{}-{}", session.id, notification.id());
     // Without previews, the notification doesn't say who wrote or what.
-    let previews = settings.get().notification_previews;
-    let title = match notification.title() {
-        Some(title) if previews => title.to_string(),
+    let mut title = match notification.title() {
+        Some(title) if values.notification_previews => title.to_string(),
         _ => "New message".to_owned(),
     };
+    if accounts.several() {
+        title = format!("{title} ({})", session.name());
+    }
     let desktop = gio::Notification::new(&title);
     if let Some(body) = notification
         .body()
-        .filter(|body| previews && !body.is_empty())
+        .filter(|body| values.notification_previews && !body.is_empty())
     {
         desktop.set_body(Some(&body));
     }
@@ -90,6 +110,8 @@ fn show(
             app.withdraw_notification(&id);
         }
     ));
-    shown.borrow_mut().insert(id.clone(), notification.clone());
+    shown
+        .borrow_mut()
+        .insert(id.clone(), (session.id.clone(), notification.clone()));
     app.send_notification(Some(&id), &desktop);
 }

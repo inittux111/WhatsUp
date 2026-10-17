@@ -1,0 +1,239 @@
+//! The open accounts: one WhatsApp Web page per account in the window's
+//! stack, kept in step with the settings as the user adds, renames and
+//! removes accounts. Features hook into every page with `on_session`,
+//! including pages added later.
+
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use gtk::glib;
+use webkit::prelude::*;
+
+use crate::settings::accounts::Account;
+use crate::settings::{Settings, Values};
+use crate::{paths, unread, web};
+
+/// One account's page.
+pub struct Session {
+    pub id: String,
+    pub view: webkit::WebView,
+    page: adw::ViewStackPage,
+    unread: Cell<u32>,
+}
+
+impl Session {
+    pub fn name(&self) -> String {
+        self.page.title().map(|t| t.to_string()).unwrap_or_default()
+    }
+}
+
+type Hook = Rc<dyn Fn(&Rc<Session>)>;
+type UnreadListener = Rc<dyn Fn(u32)>;
+
+#[derive(Clone)]
+pub struct Accounts(Rc<Inner>);
+
+struct Inner {
+    stack: adw::ViewStack,
+    settings: Settings,
+    sessions: RefCell<Vec<Rc<Session>>>,
+    hooks: RefCell<Vec<Hook>>,
+    unread_listeners: RefCell<Vec<UnreadListener>>,
+    scripts: Cell<bool>,
+    /// Set while `sync` runs: showing a page writes the settings, which
+    /// would call `sync` again halfway through.
+    syncing: Cell<bool>,
+}
+
+impl Accounts {
+    /// Opens a page for every account in the settings, showing the active one.
+    pub fn new(stack: &adw::ViewStack, settings: &Settings) -> Self {
+        let values = settings.get();
+        let accounts = Self(Rc::new(Inner {
+            stack: stack.clone(),
+            settings: settings.clone(),
+            sessions: RefCell::default(),
+            hooks: RefCell::default(),
+            unread_listeners: RefCell::default(),
+            scripts: Cell::new(values.custom_scripts),
+            syncing: Cell::new(false),
+        }));
+        accounts.sync(&values);
+        accounts.show(&values.active_account);
+
+        let weak = Rc::downgrade(&accounts.0);
+        settings.connect_changed(move |values| {
+            if let Some(inner) = weak.upgrade() {
+                Self(inner).sync(values);
+            }
+        });
+        let weak = Rc::downgrade(&accounts.0);
+        stack.connect_visible_child_name_notify(move |stack| {
+            let (Some(inner), Some(id)) = (weak.upgrade(), stack.visible_child_name()) else {
+                return;
+            };
+            inner.settings.update(|v| v.active_account = id.to_string());
+        });
+        accounts
+    }
+
+    /// Calls `f` for every account's page, now and as accounts are added.
+    pub fn on_session(&self, f: impl Fn(&Rc<Session>) + 'static) {
+        let sessions = self.sessions();
+        for session in &sessions {
+            f(session);
+        }
+        self.0.hooks.borrow_mut().push(Rc::new(f));
+    }
+
+    /// Calls `f` with the unread count of all accounts together, when it changes.
+    pub fn connect_unread(&self, f: impl Fn(u32) + 'static) {
+        self.0.unread_listeners.borrow_mut().push(Rc::new(f));
+    }
+
+    pub fn sessions(&self) -> Vec<Rc<Session>> {
+        self.0.sessions.borrow().clone()
+    }
+
+    pub fn current(&self) -> Option<Rc<Session>> {
+        let id = self.0.stack.visible_child_name()?;
+        self.find(&id)
+    }
+
+    pub fn find(&self, id: &str) -> Option<Rc<Session>> {
+        self.sessions().into_iter().find(|s| s.id == id)
+    }
+
+    /// Whether there's more than one account, so names should be shown.
+    pub fn several(&self) -> bool {
+        self.0.sessions.borrow().len() > 1
+    }
+
+    pub fn show(&self, id: &str) {
+        if self.find(id).is_some() {
+            self.0.stack.set_visible_child_name(id);
+        }
+    }
+
+    /// Shows the next (`step` 1) or previous (`step` -1) account, wrapping around.
+    pub fn cycle(&self, step: isize) {
+        let sessions = self.sessions();
+        let Some(current) = self.current() else {
+            return;
+        };
+        let Some(index) = sessions.iter().position(|s| s.id == current.id) else {
+            return;
+        };
+        let next = (index as isize + step).rem_euclid(sessions.len() as isize) as usize;
+        self.show(&sessions[next].id);
+    }
+
+    pub fn total_unread(&self) -> u32 {
+        self.sessions()
+            .iter()
+            .fold(0u32, |sum, s| sum.saturating_add(s.unread.get()))
+    }
+
+    /// Opens pages for new accounts, closes removed ones (deleting their
+    /// data, as the user confirmed), renames the rest, and reloads every
+    /// page when custom scripts were turned on or off.
+    fn sync(&self, values: &Values) {
+        if self.0.syncing.replace(true) {
+            return;
+        }
+        self.sync_now(values);
+        self.0.syncing.set(false);
+    }
+
+    fn sync_now(&self, values: &Values) {
+        let removed: Vec<Rc<Session>> = self
+            .sessions()
+            .into_iter()
+            .filter(|s| values.accounts.iter().all(|a| a.id != s.id))
+            .collect();
+        for session in removed {
+            self.close(&session);
+        }
+        for account in &values.accounts {
+            match self.find(&account.id) {
+                Some(session) if session.name() != account.name => {
+                    session.page.set_title(Some(&account.name));
+                }
+                Some(_) => {}
+                None => self.open(account, values.custom_scripts),
+            }
+        }
+        if self.0.scripts.replace(values.custom_scripts) != values.custom_scripts {
+            self.reload_customizations();
+        }
+        // A new account becomes the active one, so its QR code shows.
+        if self.current().is_none_or(|s| s.id != values.active_account) {
+            self.show(&values.active_account);
+        }
+    }
+
+    /// Reloads every page with the current stylesheets and scripts.
+    pub fn reload_customizations(&self) {
+        for session in self.sessions() {
+            web::reload_customizations(&session.view, self.0.scripts.get());
+        }
+    }
+
+    fn open(&self, account: &Account, scripts: bool) {
+        let dirs = match paths::account_dirs(&account.id) {
+            Ok(dirs) => dirs,
+            Err(err) => {
+                glib::g_warning!("whatsup-desktop", "cannot prepare an account's folder: {err}");
+                return;
+            }
+        };
+        let view = web::build(&dirs, scripts);
+        web::follow_settings(&view, &self.0.settings);
+        let page = self
+            .0
+            .stack
+            .add_titled(&view, Some(&account.id), &account.name);
+        let session = Rc::new(Session {
+            id: account.id.clone(),
+            view: view.clone(),
+            page,
+            unread: Cell::new(0),
+        });
+        let weak = Rc::downgrade(&self.0);
+        let for_title = Rc::downgrade(&session);
+        view.connect_title_notify(move |view| {
+            let (Some(inner), Some(session)) = (weak.upgrade(), for_title.upgrade()) else {
+                return;
+            };
+            let count = view
+                .title()
+                .map_or(0, |title| unread::count_from_title(&title));
+            if session.unread.replace(count) != count {
+                session.page.set_badge_number(count);
+                session.page.set_needs_attention(count > 0);
+                Self(inner).announce_unread();
+            }
+        });
+        self.0.sessions.borrow_mut().push(session.clone());
+        let hooks = self.0.hooks.borrow().clone();
+        for hook in hooks {
+            hook(&session);
+        }
+    }
+
+    fn close(&self, session: &Rc<Session>) {
+        self.0.sessions.borrow_mut().retain(|s| s.id != session.id);
+        self.0.stack.remove(&session.view);
+        session.view.terminate_web_process();
+        paths::remove_account_data(&session.id);
+        self.announce_unread();
+    }
+
+    fn announce_unread(&self) {
+        let total = self.total_unread();
+        let listeners = self.0.unread_listeners.borrow().clone();
+        for listener in listeners {
+            listener(total);
+        }
+    }
+}

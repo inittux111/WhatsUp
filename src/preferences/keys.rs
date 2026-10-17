@@ -31,6 +31,7 @@ pub fn page(app: &adw::Application, settings: &Settings) -> adw::PreferencesPage
     let mut rows = Vec::new();
     for (title, entries) in [
         ("General", &shortcuts::GENERAL[..]),
+        ("Accounts", &shortcuts::ACCOUNTS[..]),
         ("View", &shortcuts::VIEW[..]),
     ] {
         let group = group(title);

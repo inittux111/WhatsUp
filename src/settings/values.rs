@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use gtk::glib;
 
 use super::accel;
+use super::accounts::{self, Account};
 
 pub const ZOOM_MIN: f64 = 0.5;
 pub const ZOOM_MAX: f64 = 3.0;
@@ -38,6 +39,12 @@ pub struct Values {
     /// Shortcuts the user changed, by action ("win.zoom-in"); "" turns one off.
     pub shortcuts: BTreeMap<String, String>,
     pub window: WindowSize,
+    /// Never empty; the first is shown first on a fresh start.
+    pub accounts: Vec<Account>,
+    /// The account shown when WhatsUp starts.
+    pub active_account: String,
+    /// Run the user's own scripts from `~/.config/whatsup-desktop/js` in WhatsApp Web.
+    pub custom_scripts: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -69,6 +76,9 @@ impl Default for Values {
                 height: 760,
                 maximized: false,
             },
+            accounts: accounts::defaults(),
+            active_account: accounts::FIRST_ID.to_owned(),
+            custom_scripts: false,
         }
     }
 }
@@ -131,6 +141,14 @@ impl Values {
             height: size("height", v.window.height),
             maximized: flag(WINDOW, "maximized", v.window.maximized),
         };
+        v.accounts = accounts::read(&file);
+        v.active_account = file
+            .string(GENERAL, "active-account")
+            .map(|id| id.to_string())
+            .ok()
+            .filter(|id| v.accounts.iter().any(|a| a.id == *id))
+            .unwrap_or_else(|| v.accounts[0].id.clone());
+        v.custom_scripts = flag(CHATS, "custom-scripts", v.custom_scripts);
         v
     }
 
@@ -158,6 +176,9 @@ impl Values {
         file.set_integer(WINDOW, "width", self.window.width);
         file.set_integer(WINDOW, "height", self.window.height);
         file.set_boolean(WINDOW, "maximized", self.window.maximized);
+        accounts::write(&file, &self.accounts);
+        file.set_string(GENERAL, "active-account", &self.active_account);
+        file.set_boolean(CHATS, "custom-scripts", self.custom_scripts);
         file.to_data().to_string()
     }
 }
@@ -212,6 +233,18 @@ mod tests {
                 height: 700,
                 maximized: true,
             },
+            accounts: vec![
+                Account {
+                    id: "default".into(),
+                    name: "Personal".into(),
+                },
+                Account {
+                    id: "account-2".into(),
+                    name: "Work".into(),
+                },
+            ],
+            active_account: "account-2".into(),
+            custom_scripts: true,
         };
         assert_eq!(Values::parse(&values.to_data()), values);
     }
