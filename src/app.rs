@@ -26,10 +26,7 @@ pub fn run() -> glib::ExitCode {
         START_HIDDEN.set(options.contains(settings::BACKGROUND_FLAG));
         std::ops::ControlFlow::Continue(())
     });
-    app.connect_startup(|_| {
-        paths::migrate_old_dirs();
-        add_dev_icons();
-    });
+    app.connect_startup(|_| add_dev_icons());
     app.connect_activate(activate);
 
     let quit = gtk::gio::ActionEntry::builder("quit")

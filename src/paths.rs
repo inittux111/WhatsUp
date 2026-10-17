@@ -8,11 +8,6 @@ use std::path::{Path, PathBuf};
 use gtk::glib;
 
 const DIR_NAME: &str = "whatsup-desktop";
-/// The folders' name in early builds, packaged as `whatsup`.
-const OLD_DIR_NAME: &str = "whatsup";
-/// What an old folder of ours holds, so a `whatsup` folder of another program
-/// is never taken.
-const OLD_DIR_MARKERS: [&str; 4] = ["accounts", "settings.ini", "css", "js"];
 
 /// One account's WebKit data and cache folders.
 pub struct AccountDirs {
@@ -79,31 +74,6 @@ pub fn dev_icon_dir() -> Option<PathBuf> {
     cfg!(debug_assertions).then(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("data/icons"))
 }
 
-/// Moves the config, data and cache folders of an early build to their new
-/// name, keeping the user's login and settings. Runs once at startup, before
-/// anything opens them; each is a single rename within one folder.
-pub fn migrate_old_dirs() {
-    for base in [
-        glib::user_config_dir(),
-        glib::user_data_dir(),
-        glib::user_cache_dir(),
-    ] {
-        if let Err(err) = migrate_old_dir(&base) {
-            glib::g_warning!("whatsup-desktop", "cannot move an old folder: {err}");
-        }
-    }
-}
-
-fn migrate_old_dir(base: &Path) -> io::Result<()> {
-    let old = base.join(OLD_DIR_NAME);
-    let new = base.join(DIR_NAME);
-    let ours = OLD_DIR_MARKERS.iter().any(|name| old.join(name).exists());
-    if !ours || new.exists() {
-        return Ok(());
-    }
-    fs::rename(old, new)
-}
-
 fn account_path(base: &Path, account: &str) -> PathBuf {
     base.join(DIR_NAME).join("accounts").join(account)
 }
@@ -122,27 +92,6 @@ mod tests {
     fn account_path_is_per_account() {
         let path = account_path(Path::new("/base"), "default");
         assert_eq!(path, Path::new("/base/whatsup-desktop/accounts/default"));
-    }
-
-    #[test]
-    fn migrate_moves_only_our_old_folder() {
-        let root =
-            std::env::temp_dir().join(format!("whatsup-desktop-migrate-{}", std::process::id()));
-        let (ours, theirs, both) = (root.join("ours"), root.join("theirs"), root.join("both"));
-        fs::create_dir_all(ours.join("whatsup/accounts/default")).unwrap();
-        fs::create_dir_all(theirs.join("whatsup/other")).unwrap();
-        fs::create_dir_all(both.join("whatsup/accounts")).unwrap();
-        fs::create_dir_all(both.join("whatsup-desktop")).unwrap();
-
-        for base in [&ours, &theirs, &both] {
-            migrate_old_dir(base).unwrap();
-        }
-        assert!(ours.join("whatsup-desktop/accounts/default").is_dir());
-        assert!(!ours.join("whatsup").exists());
-        assert!(theirs.join("whatsup/other").is_dir());
-        assert!(!theirs.join("whatsup-desktop").exists());
-        assert!(both.join("whatsup/accounts").is_dir());
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

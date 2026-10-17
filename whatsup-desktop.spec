@@ -72,7 +72,7 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 
 %changelog
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-2
-- Replace the early builds packaged as whatsup, and move their data folders
+- Replace the early builds packaged as whatsup
 - New app ID: app.whatsup_desktop.WhatsUp
 
 * Sat Oct 17 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.0-1
