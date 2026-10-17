@@ -87,7 +87,14 @@ toolbox run -c whatsup-desktop cargo fmt                   # format
 toolbox run -c whatsup-desktop cargo audit                 # check dependencies for security advisories
 ```
 
-The app ships as an RPM: `whatsup-desktop.spec`, the `.desktop` file, the icons and the app ID, all matching. `toolbox run -c whatsup-desktop make rpm` packs the sources and the vendored crates (`cargo vendor`, so `rpmbuild` builds offline) into `target/rpm/SOURCES` and builds the RPM into `target/rpm/RPMS/x86_64/`. The spec must `Requires: webkitgtk6.0`, `libadwaita` and `google-noto-color-emoji-fonts`. Keep `BuildRequires`/`Requires` in sync with what the toolbox needs. The user installs the RPM on the host (`sudo dnf install ./<file>.rpm`).
+Officially supported: Fedora only; Debian and Ubuntu, Arch and openSUSE build too but are only documented, not tested per release. `make install` (`PREFIX`, `DESTDIR`, `BINARY`) is the one list of installed files; every package uses it, so a new file only needs adding there (and to the spec's `%files`).
+
+- **Fedora (RPM):** `whatsup-desktop.spec`, built in the toolbox with `toolbox run -c whatsup-desktop make rpm`. It packs the committed code (`git archive`, so commit first) and the vendored crates (`cargo vendor`, so `rpmbuild` builds offline) into `target/rpm/SOURCES` and builds into `target/rpm/RPMS/x86_64/`. The spec must `Requires: webkitgtk6.0`, `libadwaita` and `google-noto-color-emoji-fonts` (openSUSE names differ, under `%if 0%{?suse_version}`; use `%{_datadir}/metainfo`, as openSUSE lacks `%{_metainfodir}`). Keep `BuildRequires`/`Requires` in sync with what the toolbox needs.
+- **Debian and Ubuntu (deb):** built with Podman from any host: `make container-deb` builds the Ubuntu 26.04 image (`packaging/debian/Containerfile`, the oldest Debian-based release new enough: libadwaita 1.8+, GTK 4.20+, Rust edition 2024) and runs `make deb` (`packaging/debian/build.sh`) in it, as the current user, into `target/deb/`. The script works out `Depends` with `dpkg-shlibdeps`. It uses `target/deb-build` and `target/deb-cargo`, apart from the toolbox's `target/`. Debian 13 can't run WhatsUp (libadwaita 1.7).
+- **Arch:** `packaging/arch/PKGBUILD` builds from the source tree (`makepkg -si` in that folder).
+- **Versions:** a release sets the same version in `Cargo.toml`, `whatsup-desktop.spec` (plus a `%changelog` entry), `packaging/arch/PKGBUILD` and a `<release>` in the metainfo; `make rpm` refuses mismatched `Cargo.toml` and spec versions.
+
+The user installs the package on the host (`sudo dnf install ./<file>.rpm`).
 
 ## Verification
 

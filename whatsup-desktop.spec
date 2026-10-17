@@ -15,11 +15,20 @@ BuildRequires:  rust
 BuildRequires:  pkgconfig(libadwaita-1)
 BuildRequires:  pkgconfig(webkitgtk-6.0)
 BuildRequires:  desktop-file-utils
-BuildRequires:  libappstream-glib
+BuildRequires:  make
 
+# Fedora and openSUSE name a few packages differently.
+%if 0%{?suse_version}
+BuildRequires:  appstream-glib
+Requires:       libadwaita-1-0
+Requires:       libwebkitgtk-6_0-4
+Requires:       google-noto-coloremoji-fonts
+%else
+BuildRequires:  libappstream-glib
 Requires:       libadwaita
 Requires:       webkitgtk6.0
 Requires:       google-noto-color-emoji-fonts
+%endif
 
 %description
 WhatsUp runs WhatsApp Web in a native GNOME window that stays responsive,
@@ -46,24 +55,12 @@ desktop-file-validate data/app.whatsup.WhatsUp.desktop
 appstream-util validate-relax --nonet data/app.whatsup.WhatsUp.metainfo.xml
 
 %install
-install -Dm0755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
-install -Dm0644 data/app.whatsup.WhatsUp.desktop \
-    %{buildroot}%{_datadir}/applications/app.whatsup.WhatsUp.desktop
-install -Dm0644 data/app.whatsup.WhatsUp.metainfo.xml \
-    %{buildroot}%{_metainfodir}/app.whatsup.WhatsUp.metainfo.xml
-install -Dm0644 data/icons/app.whatsup.WhatsUp.svg \
-    %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp.svg
-install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/scalable/apps \
-    data/icons/app.whatsup.WhatsUp-tray.svg \
-    data/icons/app.whatsup.WhatsUp-tray-unread.svg
-install -Dm0644 -t %{buildroot}%{_datadir}/icons/hicolor/symbolic/apps \
-    data/icons/app.whatsup.WhatsUp-symbolic.svg \
-    data/icons/app.whatsup.WhatsUp-unread-symbolic.svg
+make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 
 %files
 %{_bindir}/%{name}
 %{_datadir}/applications/app.whatsup.WhatsUp.desktop
-%{_metainfodir}/app.whatsup.WhatsUp.metainfo.xml
+%{_datadir}/metainfo/app.whatsup.WhatsUp.metainfo.xml
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup.WhatsUp.svg
 %{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-symbolic.svg
 %{_datadir}/icons/hicolor/symbolic/apps/app.whatsup.WhatsUp-unread-symbolic.svg

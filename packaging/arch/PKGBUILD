@@ -1,0 +1,31 @@
+# Builds WhatsUp for Arch Linux (and Arch-based systems) from this source
+# tree: run `makepkg -si` in this folder.
+pkgname=whatsup-desktop
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='WhatsApp Web for GNOME'
+arch=('x86_64' 'aarch64')
+url='https://github.com/inittux111/whatsup-desktop'
+license=('GPL-3.0-or-later')
+depends=('libadwaita' 'gtk4' 'webkitgtk-6.0' 'glib2' 'noto-fonts-emoji')
+optdepends=('hunspell-en_us: spell checking in English')
+makedepends=('rust' 'make' 'pkgconf')
+options=('!lto')
+
+# The source tree is two folders up from this PKGBUILD.
+_tree="$startdir/../.."
+
+build() {
+  cd "$_tree"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$_tree"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$_tree"
+  make install DESTDIR="$pkgdir" PREFIX=/usr BINARY="$srcdir/target/release/$pkgname"
+}

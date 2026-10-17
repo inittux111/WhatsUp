@@ -26,11 +26,71 @@ and a light footprint.
 
 ## Installing
 
-Build the RPM (see below) and install it:
+WhatsUp officially supports Fedora 43 and newer (it needs libadwaita 1.8 or
+newer). Build the RPM (see below), then:
 
 ```sh
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 ```
+
+Debian, Ubuntu, Arch and openSUSE build too, but aren't officially supported;
+see [Other systems](#other-systems-not-officially-supported).
+
+## Settings
+
+Open Settings from the ☰ menu, the tray icon's menu, or with `Ctrl+,`. These
+are WhatsUp's own settings; WhatsApp's (privacy, chats, account) stay in
+WhatsApp's menu. Changes apply straight away.
+
+### General
+
+| Setting | What it does | Default |
+|---|---|---|
+| Run in Background | Closing the window keeps WhatsUp running in the tray | On |
+| Start at Login | Opens WhatsUp when you log in | Off |
+| Start in Background | When starting at login, stays hidden in the tray | On |
+| Show Tray Icon | The icon in the top bar with the unread count | On |
+| Coloured Tray Icon | Green tray icon; off matches the top bar's other icons | On |
+| Show Unread Count on App Icon | In docks that show one, such as Dash to Dock | On |
+| Show Notifications | Notifies about new messages | On |
+| Show Message Previews | Shows who wrote and what in notifications | On |
+
+### Chats
+
+| Setting | What it does | Default |
+|---|---|---|
+| Zoom | Size of text and pictures, from 50% to 300% | 100% |
+| Show Zoom in Menu | Zoom Out, Reset Zoom and Zoom In in the ☰ menu | On |
+| Check Spelling | Underlines misspelled words while typing | On |
+| Spelling Languages | The installed dictionaries to check against | System languages |
+| Download Folder | Where downloaded files are saved | Downloads |
+| Ask Where to Save | Asks for a folder for each download instead | Off |
+| Use System Colours | WhatsApp takes its colours from your GNOME theme | On |
+| Stylesheets / Scripts | Open the folders for your own CSS and JavaScript | |
+| Run Custom Scripts | Runs your scripts in WhatsApp (they can read your messages) | Off |
+| Reload Styles and Scripts | Applies changes to them without a restart | |
+
+### Accounts
+
+Add an account (it opens with a QR code to link a phone), rename one, or
+remove one. Removing an account deletes its login data from this computer;
+the chats stay on the phone.
+
+### Shortcuts
+
+Every shortcut can be changed: click it and press the new keys, Backspace
+turns it off, and ↶ resets it. Shortcuts need Ctrl, Alt or Super, or an F-key,
+and can't be used twice. The defaults:
+
+| Action | Keys |
+|---|---|
+| Settings | `Ctrl+,` |
+| Keyboard Shortcuts | `Ctrl+?` |
+| Close Window | `Ctrl+W` |
+| Quit | `Ctrl+Q` |
+| Next / Previous Account | `Ctrl+Page Down` / `Ctrl+Page Up` |
+| Zoom In / Out / Reset | `Ctrl++` / `Ctrl+-` / `Ctrl+0` |
+| Reload | `Ctrl+R` or `F5` |
 
 ## Customizing
 
@@ -46,7 +106,11 @@ Styles and Scripts opens these folders and reloads them without a restart.
 
 ## Building from source
 
-Development happens in a Fedora toolbox, so nothing is installed on the host:
+Builds run in a container, so no build tools end up on your system.
+
+### Fedora
+
+In a Fedora toolbox, which also runs the app on your desktop while developing:
 
 ```sh
 toolbox create whatsup-desktop --image registry.fedoraproject.org/fedora-toolbox:44
@@ -59,7 +123,40 @@ toolbox run -c whatsup-desktop cargo test      # run the tests
 toolbox run -c whatsup-desktop make rpm        # build the RPM into target/rpm/RPMS/
 ```
 
-Notifications and starting at login need the installed RPM, as GNOME only
+`make rpm` packs the committed code, so commit your changes first.
+
+### Other systems (not officially supported)
+
+These build fine, but aren't tested with every release.
+
+On **Debian and Ubuntu** (Ubuntu 26.04+ or Debian testing; Debian 13's
+libadwaita is too old), build with Podman, in an Ubuntu 26.04 container
+(`packaging/debian/Containerfile`); the first run builds the container image,
+later runs reuse it:
+
+```sh
+sudo apt install podman make
+make container-deb                     # build the .deb into target/deb/
+sudo apt install ./target/deb/whatsup-desktop_*.deb
+```
+
+On **Arch**, the package recipe is in `packaging/arch`:
+
+```sh
+sudo pacman -S --needed base-devel rust libadwaita gtk4 webkitgtk-6.0 noto-fonts-emoji
+cd packaging/arch && makepkg -si
+```
+
+On **openSUSE Tumbleweed**, the RPM spec works as on Fedora:
+
+```sh
+sudo zypper install rpm-build make git cargo desktop-file-utils appstream-glib \
+    'pkgconfig(libadwaita-1)' 'pkgconfig(gtk4)' 'pkgconfig(webkitgtk-6.0)'
+make rpm
+sudo zypper install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
+```
+
+Notifications and starting at login need the installed package, as GNOME only
 shows notifications for apps with an installed `.desktop` file.
 
 ## Privacy
