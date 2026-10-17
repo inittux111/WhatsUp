@@ -1,8 +1,11 @@
 //! The application: one instance per session, one main window.
 
+use std::cell::Cell;
+
 use adw::prelude::*;
 use gtk::glib;
 
+use crate::settings::{self, Settings};
 use crate::{background, downloads, notifications, paths, window};
 
 pub const APP_ID: &str = "app.whatsup.WhatsUp";
@@ -11,17 +14,35 @@ pub const APP_NAME: &str = "WhatsUp";
 pub fn run() -> glib::ExitCode {
     glib::set_application_name(APP_NAME);
     let app = adw::Application::builder().application_id(APP_ID).build();
+    app.add_main_option(
+        settings::BACKGROUND_FLAG,
+        glib::Char::from(0),
+        glib::OptionFlags::NONE,
+        glib::OptionArg::None,
+        "Start hidden in the tray",
+        None,
+    );
+    app.connect_handle_local_options(|_, options| {
+        START_HIDDEN.set(options.contains(settings::BACKGROUND_FLAG));
+        std::ops::ControlFlow::Continue(())
+    });
     app.connect_startup(|_| add_dev_icons());
     app.connect_activate(activate);
-    app.set_accels_for_action("win.reload", &["<Control>r", "F5"]);
-    app.set_accels_for_action("app.quit", &["<Control>q"]);
 
     let quit = gtk::gio::ActionEntry::builder("quit")
-        .activate(|app: &adw::Application, _, _| app.quit())
+        .activate(|app: &adw::Application, _, _| quit(app))
         .build();
     app.add_action_entries([quit]);
 
     app.run()
+}
+
+thread_local! {
+    /// Started with `--background`, as starting at login does: the first
+    /// window stays hidden in the tray.
+    static START_HIDDEN: Cell<bool> = const { Cell::new(false) };
+    /// The main window's settings, for saving them as the app quits.
+    static MAIN_SETTINGS: std::cell::RefCell<Option<Settings>> = const { std::cell::RefCell::new(None) };
 }
 
 /// Shows the existing window, or builds it on first launch.
@@ -30,18 +51,34 @@ fn activate(app: &adw::Application) {
         window.present();
         return;
     }
-    match window::build(app) {
+    match window::build(app, Settings::load()) {
         Ok(main) => {
-            background::attach(app, &main.window, &main.view);
-            notifications::attach(app, &main.window, &main.view);
-            downloads::attach(&main.view, &main.toasts);
-            main.window.present();
+            MAIN_SETTINGS.with(|s| s.replace(Some(main.settings.clone())));
+            background::attach(app, &main);
+            notifications::attach(app, &main);
+            downloads::attach(&main);
+            if !START_HIDDEN.replace(false) {
+                main.window.present();
+            }
         }
         Err(err) => {
             eprintln!("{APP_NAME}: cannot prepare the account folder: {err}");
             app.quit();
         }
     }
+}
+
+/// Quits, after saving the window's size; the settings are written right
+/// away, as a background save wouldn't finish.
+fn quit(app: &adw::Application) {
+    if let Some(window) = app.active_window().and_downcast::<adw::ApplicationWindow>() {
+        let settings = MAIN_SETTINGS.with(|s| s.borrow().clone());
+        if let Some(settings) = settings {
+            window::remember_size(&window, &settings);
+            settings.save_now();
+        }
+    }
+    app.quit();
 }
 
 /// In development builds, finds the app's icons in the source tree.

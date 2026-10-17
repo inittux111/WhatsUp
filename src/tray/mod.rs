@@ -28,6 +28,7 @@ struct Inner {
 #[derive(Default)]
 struct State {
     unread: u32,
+    hidden: bool,
     window_visible: bool,
     revision: u32,
 }
@@ -60,12 +61,31 @@ impl Tray {
             std::mem::replace(&mut state.unread, unread) != unread
         };
         if changed {
-            let status = item::status(unread);
-            self.inner
-                .emit_item("NewStatus", Some((status,).to_variant()));
-            self.inner.emit_item("NewIcon", None);
-            self.inner.emit_item("NewToolTip", None);
+            self.announce();
         }
+    }
+
+    /// Shows or hides the icon; a hidden icon stays registered, so showing
+    /// it again is instant.
+    pub fn set_icon_visible(&self, visible: bool) {
+        let changed = {
+            let mut state = self.inner.state.borrow_mut();
+            std::mem::replace(&mut state.hidden, !visible) == visible
+        };
+        if changed {
+            self.announce();
+        }
+    }
+
+    fn announce(&self) {
+        let status = {
+            let state = self.inner.state.borrow();
+            item::status(state.unread, state.hidden)
+        };
+        self.inner
+            .emit_item("NewStatus", Some((status,).to_variant()));
+        self.inner.emit_item("NewIcon", None);
+        self.inner.emit_item("NewToolTip", None);
     }
 
     pub fn set_window_visible(&self, visible: bool) {
@@ -135,8 +155,12 @@ fn register_item(inner: &Rc<Inner>) -> Result<(), glib::Error> {
             let Some(inner) = for_props.upgrade() else {
                 return "".to_variant();
             };
-            let unread = inner.state.borrow().unread;
-            item::property(name, unread, &inner.icon_theme_path).unwrap_or_else(|| "".to_variant())
+            let (unread, hidden) = {
+                let state = inner.state.borrow();
+                (state.unread, state.hidden)
+            };
+            item::property(name, unread, hidden, &inner.icon_theme_path)
+                .unwrap_or_else(|| "".to_variant())
         })
         .build()?;
     Ok(())

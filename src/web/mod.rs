@@ -45,6 +45,42 @@ pub fn build(dirs: &AccountDirs) -> webkit::WebView {
     view
 }
 
+/// Applies the zoom and spell checking settings now and whenever they change.
+pub fn follow_settings(view: &webkit::WebView, settings: &crate::settings::Settings) {
+    let apply = glib::clone!(
+        #[weak]
+        view,
+        move |values: &crate::settings::Values| {
+            view.set_zoom_level(values.zoom);
+            if let Some(context) = view.context() {
+                context.set_spell_checking_enabled(values.spell_check);
+                let languages = if values.spell_languages.is_empty() {
+                    spell_languages(&glib::language_names())
+                } else {
+                    values.spell_languages.clone()
+                };
+                let languages: Vec<&str> = languages.iter().map(String::as_str).collect();
+                context.set_spell_checking_languages(&languages);
+            }
+        }
+    );
+    apply(&settings.get());
+    settings.connect_changed(apply);
+}
+
+/// The user's languages as spell checking dictionaries ("nl_NL", "en"),
+/// from GLib's list, which also holds variants such as "nl_NL.UTF-8" and "C".
+fn spell_languages(names: &[glib::GString]) -> Vec<String> {
+    let mut languages: Vec<String> = Vec::new();
+    for name in names {
+        let valid = !name.contains(['.', '@']) && !matches!(name.as_str(), "C" | "POSIX");
+        if valid && !languages.iter().any(|l| l == name.as_str()) {
+            languages.push(name.to_string());
+        }
+    }
+    languages
+}
+
 fn settings() -> webkit::Settings {
     let settings = webkit::Settings::new();
     settings.set_enable_developer_extras(cfg!(debug_assertions));
@@ -66,4 +102,19 @@ pub fn open_externally(view: &webkit::WebView, uri: &str) {
             glib::g_warning!("whatsup-desktop", "cannot open a link: {}", err.message());
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spell_languages_are_plain_locales() {
+        let names: Vec<glib::GString> =
+            ["nl_NL.UTF-8", "nl_NL", "nl.UTF-8", "nl", "en_US@euro", "C"]
+                .into_iter()
+                .map(glib::GString::from)
+                .collect();
+        assert_eq!(spell_languages(&names), ["nl_NL", "nl"]);
+    }
 }

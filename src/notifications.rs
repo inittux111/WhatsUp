@@ -10,12 +10,16 @@ use adw::prelude::*;
 use gtk::{gio, glib};
 use webkit::prelude::*;
 
+use crate::settings::Settings;
+use crate::window::Main;
+
 const OPEN_ACTION: &str = "open-notification";
 
 /// The notifications on screen, by their GNotification id.
 type Shown = Rc<RefCell<HashMap<String, webkit::Notification>>>;
 
-pub fn attach(app: &adw::Application, window: &adw::ApplicationWindow, view: &webkit::WebView) {
+pub fn attach(app: &adw::Application, main: &Main) {
+    let (window, view, settings) = (&main.window, &main.view, main.settings.clone());
     let shown = Shown::default();
 
     let open = gio::SimpleAction::new(OPEN_ACTION, Some(glib::VariantTy::STRING));
@@ -41,17 +45,33 @@ pub fn attach(app: &adw::Application, window: &adw::ApplicationWindow, view: &we
         #[upgrade_or]
         false,
         move |_, notification| {
-            show(&app, &shown, notification);
+            show(&app, &shown, &settings, notification);
             true
         }
     ));
 }
 
-fn show(app: &adw::Application, shown: &Shown, notification: &webkit::Notification) {
+fn show(
+    app: &adw::Application,
+    shown: &Shown,
+    settings: &Settings,
+    notification: &webkit::Notification,
+) {
+    if !settings.get().notifications {
+        return;
+    }
     let id = format!("message-{}", notification.id());
-    let title = notification.title().unwrap_or_default();
+    // Without previews, the notification doesn't say who wrote or what.
+    let previews = settings.get().notification_previews;
+    let title = match notification.title() {
+        Some(title) if previews => title.to_string(),
+        _ => "New message".to_owned(),
+    };
     let desktop = gio::Notification::new(&title);
-    if let Some(body) = notification.body().filter(|body| !body.is_empty()) {
+    if let Some(body) = notification
+        .body()
+        .filter(|body| previews && !body.is_empty())
+    {
         desktop.set_body(Some(&body));
     }
     desktop.set_category(Some("im.received"));

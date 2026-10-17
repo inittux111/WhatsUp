@@ -26,6 +26,11 @@ pub fn account_dirs(account: &str) -> io::Result<AccountDirs> {
     Ok(dirs)
 }
 
+/// The settings file, in WhatsUp's private config folder.
+pub fn settings_file() -> PathBuf {
+    glib::user_config_dir().join(DIR_NAME).join("settings.ini")
+}
+
 /// The folder holding the user's own stylesheets for WhatsApp Web.
 pub fn css_dir() -> PathBuf {
     glib::user_config_dir().join(DIR_NAME).join("css")
@@ -47,7 +52,7 @@ fn account_path(base: &Path, account: &str) -> PathBuf {
 }
 
 /// Creates `dir` and its parents as 0700, and tightens an existing `dir` to 0700.
-fn ensure_private(dir: &Path) -> io::Result<()> {
+pub fn ensure_private(dir: &Path) -> io::Result<()> {
     DirBuilder::new().recursive(true).mode(0o700).create(dir)?;
     fs::set_permissions(dir, fs::Permissions::from_mode(0o700))
 }

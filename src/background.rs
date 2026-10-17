@@ -7,10 +7,18 @@ use adw::prelude::*;
 use gtk::glib;
 use webkit::prelude::*;
 
+use crate::window::Main;
 use crate::{badge, paths, tray, unread};
 
-pub fn attach(app: &adw::Application, window: &adw::ApplicationWindow, view: &webkit::WebView) {
-    window.connect_close_request(|window| {
+pub fn attach(app: &adw::Application, main: &Main) {
+    let (window, view) = (&main.window, &main.view);
+    let settings = main.settings.clone();
+    window.connect_close_request(move |window| {
+        if !settings.get().run_in_background {
+            // The app quits with its window; a background save wouldn't finish.
+            settings.save_now();
+            return glib::Propagation::Proceed;
+        }
         window.set_visible(false);
         glib::Propagation::Stop
     });
@@ -22,18 +30,39 @@ pub fn attach(app: &adw::Application, window: &adw::ApplicationWindow, view: &we
 
     if let Some(tray) = &tray {
         tray.set_window_visible(window.is_visible());
-        let tray = tray.clone();
-        window.connect_visible_notify(move |window| tray.set_window_visible(window.is_visible()));
+        tray.set_icon_visible(main.settings.get().show_tray_icon);
+        let for_window = tray.clone();
+        window.connect_visible_notify(move |window| {
+            for_window.set_window_visible(window.is_visible());
+        });
     }
 
-    view.connect_title_notify(move |view| {
-        let count = view
-            .title()
-            .map_or(0, |title| unread::count_from_title(&title));
-        if let Some(tray) = &tray {
-            tray.set_unread(count);
+    let count = Rc::new(std::cell::Cell::new(0));
+    let settings = main.settings.clone();
+    let update = glib::clone!(
+        #[strong]
+        tray,
+        #[strong]
+        count,
+        #[strong]
+        settings,
+        move || {
+            let values = settings.get();
+            if let Some(tray) = &tray {
+                tray.set_icon_visible(values.show_tray_icon);
+                tray.set_unread(count.get());
+            }
+            badge::set_count(&connection, if values.dock_badge { count.get() } else { 0 });
         }
-        badge::set_count(&connection, count);
+    );
+    let on_change = update.clone();
+    main.settings.connect_changed(move |_| on_change());
+    view.connect_title_notify(move |view| {
+        count.set(
+            view.title()
+                .map_or(0, |title| unread::count_from_title(&title)),
+        );
+        update();
     });
 }
 
@@ -53,7 +82,7 @@ fn new_tray(
     let quit = glib::clone!(
         #[weak]
         app,
-        move || app.quit()
+        move || app.activate_action("quit", None)
     );
     match tray::Tray::new(connection, icon_theme_path, toggle, quit) {
         Ok(tray) => Some(tray),

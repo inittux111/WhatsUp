@@ -12,24 +12,47 @@ use gtk::{gio, glib};
 use webkit::prelude::*;
 
 use crate::paths;
+use crate::settings::Settings;
+use crate::window::Main;
 
-pub fn attach(view: &webkit::WebView, toasts: &adw::ToastOverlay) {
-    let Some(session) = view.network_session() else {
+pub fn attach(main: &Main) {
+    let Some(session) = main.view.network_session() else {
         return;
     };
+    let settings = main.settings.clone();
     session.connect_download_started(glib::clone!(
-        #[weak]
-        toasts,
-        move |_, download| track(download, &toasts)
+        #[weak(rename_to = toasts)]
+        main.toasts,
+        move |_, download| track(download, &toasts, &settings)
     ));
 }
 
-fn track(download: &webkit::Download, toasts: &adw::ToastOverlay) {
+fn track(download: &webkit::Download, toasts: &adw::ToastOverlay, settings: &Settings) {
     download.set_allow_overwrite(false);
-    download.connect_decide_destination(|download, suggested| {
-        choose_destination(download, suggested);
-        true
-    });
+    let values = settings.get();
+    let folder = values.download_folder.unwrap_or_else(paths::downloads_dir);
+    let ask = values.ask_download_location;
+    download.connect_decide_destination(glib::clone!(
+        #[weak]
+        toasts,
+        #[upgrade_or]
+        false,
+        move |download, suggested| {
+            if ask {
+                // WebKit waits until the destination is set or the download cancelled.
+                let window = toasts.root().and_downcast::<gtk::Window>();
+                glib::spawn_future_local(ask_destination(
+                    download.clone(),
+                    window,
+                    folder.clone(),
+                    filename::sanitize(suggested),
+                ));
+            } else {
+                choose_destination(download, &folder, suggested);
+            }
+            true
+        }
+    ));
 
     let failed = Rc::new(Cell::new(false));
     download.connect_failed(glib::clone!(
@@ -59,15 +82,43 @@ fn track(download: &webkit::Download, toasts: &adw::ToastOverlay) {
     ));
 }
 
-fn choose_destination(download: &webkit::Download, suggested: &str) {
-    let dir = paths::downloads_dir();
-    if let Err(err) = std::fs::create_dir_all(&dir) {
+fn choose_destination(download: &webkit::Download, dir: &Path, suggested: &str) {
+    if let Err(err) = std::fs::create_dir_all(dir) {
         glib::g_warning!("whatsup-desktop", "cannot create the downloads folder: {err}");
     }
-    let path = filename::unique_path(&dir, &filename::sanitize(suggested), Path::exists);
+    let path = filename::unique_path(dir, &filename::sanitize(suggested), Path::exists);
     match path.to_str() {
         Some(path) => download.set_destination(path),
         // WebKit takes the destination as UTF-8; a folder it can't name is refused.
+        None => download.cancel(),
+    }
+}
+
+/// Asks where to save, through the desktop's file picker; cancelling it
+/// cancels the download.
+async fn ask_destination(
+    download: webkit::Download,
+    window: Option<gtk::Window>,
+    folder: std::path::PathBuf,
+    name: String,
+) {
+    let dialog = gtk::FileDialog::builder()
+        .title("Save File")
+        .modal(true)
+        .initial_folder(&gio::File::for_path(&folder))
+        .initial_name(name.as_str())
+        .build();
+    let path = dialog
+        .save_future(window.as_ref())
+        .await
+        .ok()
+        .and_then(|file| file.path());
+    match path.as_deref().and_then(Path::to_str) {
+        Some(path) => {
+            // The user chose this file in the picker, which asked before replacing it.
+            download.set_allow_overwrite(true);
+            download.set_destination(path);
+        }
         None => download.cancel(),
     }
 }

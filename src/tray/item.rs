@@ -33,9 +33,12 @@ pub const XML: &str = r#"<node>
 const ICON: &str = "app.whatsup.WhatsUp-symbolic";
 const UNREAD_ICON: &str = "app.whatsup.WhatsUp-unread-symbolic";
 
-/// Whether there are unread chats: the tray shows a different icon then.
-pub fn status(unread: u32) -> &'static str {
-    if unread > 0 {
+/// The icon's state: "Passive" hides it, and with unread chats the tray
+/// shows the attention icon.
+pub fn status(unread: u32, hidden: bool) -> &'static str {
+    if hidden {
+        "Passive"
+    } else if unread > 0 {
         "NeedsAttention"
     } else {
         "Active"
@@ -51,13 +54,13 @@ pub fn tooltip_text(unread: u32) -> String {
 }
 
 /// The value of property `name`, for `unread` unread chats.
-pub fn property(name: &str, unread: u32, icon_theme_path: &str) -> Option<Variant> {
+pub fn property(name: &str, unread: u32, hidden: bool, icon_theme_path: &str) -> Option<Variant> {
     let empty_pixmaps: Vec<(i32, i32, Vec<u8>)> = Vec::new();
     Some(match name {
         "Category" => "Communications".to_variant(),
         "Id" => crate::app::APP_ID.to_variant(),
         "Title" => crate::app::APP_NAME.to_variant(),
-        "Status" => status(unread).to_variant(),
+        "Status" => status(unread, hidden).to_variant(),
         "WindowId" => 0i32.to_variant(),
         "IconName" => ICON.to_variant(),
         "AttentionIconName" => UNREAD_ICON.to_variant(),
@@ -83,8 +86,9 @@ mod tests {
 
     #[test]
     fn status_and_tooltip_follow_unread() {
-        assert_eq!(status(0), "Active");
-        assert_eq!(status(2), "NeedsAttention");
+        assert_eq!(status(0, false), "Active");
+        assert_eq!(status(2, false), "NeedsAttention");
+        assert_eq!(status(2, true), "Passive");
         assert_eq!(tooltip_text(0), "No unread chats");
         assert_eq!(tooltip_text(1), "1 unread chat");
         assert_eq!(tooltip_text(5), "5 unread chats");
@@ -92,10 +96,16 @@ mod tests {
 
     #[test]
     fn properties_have_their_dbus_types() {
-        let ty = |name| property(name, 1, "").unwrap().type_().as_str().to_owned();
+        let ty = |name| {
+            property(name, 1, false, "")
+                .unwrap()
+                .type_()
+                .as_str()
+                .to_owned()
+        };
         assert_eq!(ty("ToolTip"), "(sa(iiay)ss)");
         assert_eq!(ty("Menu"), "o");
         assert_eq!(ty("WindowId"), "i");
-        assert!(property("Nonexistent", 0, "").is_none());
+        assert!(property("Nonexistent", 0, false, "").is_none());
     }
 }
