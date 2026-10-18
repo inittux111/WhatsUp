@@ -3,7 +3,7 @@
 use std::cell::Cell;
 
 use adw::prelude::*;
-use gtk::glib;
+use gtk::{gio, glib};
 
 use crate::settings::{self, Settings};
 use crate::{background, downloads, notifications, paths, window};
@@ -22,14 +22,20 @@ pub fn run() -> glib::ExitCode {
         "Start hidden in the tray",
         None,
     );
-    app.connect_handle_local_options(|_, options| {
-        START_HIDDEN.set(options.contains(settings::BACKGROUND_FLAG));
+    app.connect_handle_local_options(|app, options| {
+        let hidden = options.contains(settings::BACKGROUND_FLAG);
+        START_HIDDEN.set(hidden);
+        // Already running, so already in the tray: activating the running
+        // instance would bring its window up, which a hidden start mustn't.
+        if hidden && app.register(gio::Cancellable::NONE).is_ok() && app.is_remote() {
+            return std::ops::ControlFlow::Break(glib::ExitCode::SUCCESS);
+        }
         std::ops::ControlFlow::Continue(())
     });
     app.connect_startup(|_| add_dev_icons());
     app.connect_activate(activate);
 
-    let quit = gtk::gio::ActionEntry::builder("quit")
+    let quit = gio::ActionEntry::builder("quit")
         .activate(|app: &adw::Application, _, _| quit(app))
         .build();
     app.add_action_entries([quit]);

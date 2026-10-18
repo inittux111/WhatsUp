@@ -15,8 +15,10 @@ const WATCHER: &str = "org.kde.StatusNotifierWatcher";
 
 /// What the icon does; each runs from the main loop, never inside a D-Bus call.
 pub struct Actions {
-    /// Shows or hides the window: a click on the icon, or Show/Hide.
+    /// Shows or hides the window: a click on the icon.
     pub toggle: Box<dyn Fn()>,
+    /// Shows (true) or hides (false) the window, as the menu's Show/Hide says.
+    pub show: Box<dyn Fn(bool)>,
     pub settings: Box<dyn Fn()>,
     pub quit: Box<dyn Fn()>,
 }
@@ -195,8 +197,12 @@ fn register_menu(inner: &Rc<Inner>) -> Result<(), glib::Error> {
         .connection
         .register_object(menu::OBJECT_PATH, &info)
         .method_call(move |_, _, _, _, method, params, invocation| {
-            let reply = menu_call(&for_calls, method, &params);
-            invocation.return_value(reply.as_ref());
+            match menu_call(&for_calls, method, &params) {
+                Ok(reply) => invocation.return_value(reply.as_ref()),
+                Err(message) => {
+                    invocation.return_dbus_error("org.freedesktop.DBus.Error.InvalidArgs", message)
+                }
+            }
         })
         .property(move |_, _, _, _, name| {
             let path = for_props.upgrade().map(|i| i.icon_theme_path.clone());
@@ -212,22 +218,37 @@ fn register_menu(inner: &Rc<Inner>) -> Result<(), glib::Error> {
 }
 
 /// Answers one dbusmenu call; the reply is the method's out arguments.
-fn menu_call(inner: &Weak<Inner>, method: &str, params: &Variant) -> Option<Variant> {
+fn menu_call(
+    inner: &Weak<Inner>,
+    method: &str,
+    params: &Variant,
+) -> Result<Option<Variant>, &'static str> {
     let no_ids: Vec<i32> = Vec::new();
-    match method {
+    let (revision, window_visible) = inner.upgrade().map_or((0, false), |inner| {
+        let state = inner.state.borrow();
+        (state.revision, state.window_visible)
+    });
+    Ok(match method {
         "GetLayout" => {
-            let state = inner.upgrade()?;
-            let state = state.state.borrow();
-            Some(Variant::tuple_from_iter([
-                state.revision.to_variant(),
-                menu::layout(state.window_visible),
-            ]))
+            let parent = params.child_value(0).get::<i32>().unwrap_or(0);
+            let layout = menu::subtree(window_visible, parent).ok_or("no such menu item")?;
+            Some(Variant::tuple_from_iter([revision.to_variant(), layout]))
         }
         "GetGroupProperties" => {
-            let none: Vec<(i32, std::collections::HashMap<String, Variant>)> = Vec::new();
-            Some((none,).to_variant())
+            let (ids, names) = params
+                .get::<(Vec<i32>, Vec<String>)>()
+                .ok_or("invalid arguments")?;
+            Some(Variant::tuple_from_iter([menu::group_properties(
+                window_visible,
+                &ids,
+                &names,
+            )]))
         }
-        "GetProperty" => Some((Variant::from_variant(&"".to_variant()),).to_variant()),
+        "GetProperty" => {
+            let (id, name) = params.get::<(i32, String)>().ok_or("invalid arguments")?;
+            let value = menu::property(window_visible, id, &name).ok_or("no such property")?;
+            Some(Variant::tuple_from_iter([Variant::from_variant(&value)]))
+        }
         "Event" => {
             if let Some((id, event, _, _)) = params.get::<(i32, String, Variant, u32)>() {
                 menu_event(inner, id, &event);
@@ -244,7 +265,7 @@ fn menu_call(inner: &Weak<Inner>, method: &str, params: &Variant) -> Option<Vari
         "AboutToShow" => Some((false,).to_variant()),
         "AboutToShowGroup" => Some((no_ids.clone(), no_ids).to_variant()),
         _ => None,
-    }
+    })
 }
 
 fn menu_event(inner: &Weak<Inner>, id: i32, event: &str) {
@@ -252,7 +273,12 @@ fn menu_event(inner: &Weak<Inner>, id: i32, event: &str) {
         return;
     }
     match menu::Entry::from_id(id) {
-        Some(menu::Entry::ShowHide) => Inner::later(inner, |inner| (inner.actions.toggle)()),
+        // Does what the label said: "Hide WhatsUp" hides the window even
+        // when it isn't the active one.
+        Some(menu::Entry::ShowHide) => Inner::later(inner, |inner| {
+            let visible = inner.state.borrow().window_visible;
+            (inner.actions.show)(!visible)
+        }),
         Some(menu::Entry::Settings) => Inner::later(inner, |inner| (inner.actions.settings)()),
         Some(menu::Entry::Quit) => Inner::later(inner, |inner| (inner.actions.quit)()),
         None => {}
@@ -295,5 +321,36 @@ async fn register_with_watcher(connection: gio::DBusConnection) {
             "cannot show the tray icon: {}",
             err.message()
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each dbusmenu reply has the out arguments the interface declares
+    /// (see `menu::XML`); GIO drops replies of the wrong type.
+    #[test]
+    fn menu_replies_match_the_interface() {
+        let no_names: Vec<String> = Vec::new();
+        let calls = [
+            (
+                "GetLayout",
+                (0i32, -1i32, no_names.clone()).to_variant(),
+                "(u(ia{sv}av))",
+            ),
+            (
+                "GetGroupProperties",
+                (vec![1i32], no_names).to_variant(),
+                "(a(ia{sv}))",
+            ),
+            ("GetProperty", (1i32, "label").to_variant(), "(v)"),
+            ("AboutToShow", (1i32,).to_variant(), "(b)"),
+            ("AboutToShowGroup", (vec![1i32],).to_variant(), "(aiai)"),
+        ];
+        for (method, params, out) in calls {
+            let reply = menu_call(&Weak::new(), method, &params).unwrap().unwrap();
+            assert_eq!(reply.type_().as_str(), out, "{method}");
+        }
     }
 }

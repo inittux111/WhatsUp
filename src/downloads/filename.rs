@@ -14,20 +14,39 @@ pub fn sanitize(suggested: &str) -> String {
     let cleaned: String = last
         .chars()
         .map(|c| {
-            if c.is_control() || matches!(c, ':' | '*' | '?' | '"' | '<' | '>' | '|') {
+            if c.is_control()
+                || is_bidi_control(c)
+                || matches!(c, ':' | '*' | '?' | '"' | '<' | '>' | '|')
+            {
                 '_'
             } else {
                 c
             }
         })
         .collect();
-    let trimmed = cleaned.trim().trim_start_matches('.').trim();
-    let name = truncate(trimmed, MAX_BYTES);
-    if name.is_empty() {
-        FALLBACK.to_owned()
-    } else {
-        name.to_owned()
+    // Dots and spaces in any mix (". .bashrc"), so the name can't start with a dot.
+    let trimmed = cleaned
+        .trim_start_matches(|c: char| c == '.' || c.is_whitespace())
+        .trim_end();
+    if trimmed.is_empty() {
+        return FALLBACK.to_owned();
     }
+    if trimmed.len() <= MAX_BYTES {
+        return trimmed.to_owned();
+    }
+    // Shorten the name, not its extension, so the file still opens in the right app.
+    let (stem, extension) = split_extension(trimmed);
+    if extension.len() < MAX_BYTES / 2 {
+        format!("{}{extension}", truncate(stem, MAX_BYTES - extension.len()))
+    } else {
+        truncate(trimmed, MAX_BYTES).to_owned()
+    }
+}
+
+/// Characters that reorder the text around them, so "photo\u{202E}gpj.exe"
+/// would show as "photoexe.jpg".
+fn is_bidi_control(c: char) -> bool {
+    matches!(c, '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
 }
 
 /// The first of `name`, `name (1)`, `name (2)`, ... in `dir` that `exists` says is free.
@@ -83,12 +102,15 @@ mod tests {
         assert_eq!(sanitize(".."), FALLBACK);
         assert_eq!(sanitize(""), FALLBACK);
         assert_eq!(sanitize("dir/"), FALLBACK);
+        assert_eq!(sanitize(". .bashrc"), "bashrc");
+        assert_eq!(sanitize(" . . "), FALLBACK);
     }
 
     #[test]
     fn replaces_control_and_reserved_characters() {
         assert_eq!(sanitize("a\nb\0c.txt"), "a_b_c.txt");
         assert_eq!(sanitize("what?.txt"), "what_.txt");
+        assert_eq!(sanitize("photo\u{202E}gpj.exe"), "photo_gpj.exe");
     }
 
     #[test]
@@ -97,6 +119,13 @@ mod tests {
         let name = sanitize(&long);
         assert!(name.len() <= MAX_BYTES);
         assert!(name.chars().all(|c| c == 'é'));
+
+        let name = sanitize(&format!("{}.pdf", "a".repeat(300)));
+        assert_eq!(name.len(), MAX_BYTES);
+        assert!(name.ends_with("a.pdf"));
+
+        let name = sanitize(&format!("a.{}", "b".repeat(300)));
+        assert_eq!(name.len(), MAX_BYTES);
     }
 
     #[test]

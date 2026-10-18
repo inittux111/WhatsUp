@@ -155,7 +155,9 @@ async fn write(path: &std::path::Path, data: String) -> Result<(), glib::Error> 
             data.into_bytes(),
             None,
             false,
-            gio::FileCreateFlags::PRIVATE,
+            // Not keeping the old file's mode, which GIO otherwise does:
+            // a file left readable by others would stay readable.
+            gio::FileCreateFlags::PRIVATE | gio::FileCreateFlags::REPLACE_DESTINATION,
         )
         .await
         .map(|_| ())

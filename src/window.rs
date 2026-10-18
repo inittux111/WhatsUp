@@ -93,7 +93,6 @@ fn follow_account_count(
     settings.connect_changed(move |_| apply());
 }
 
-/// The ☰ menu; it follows the "Show Zoom in Menu" setting.
 /// Stores the window's size, so the next start opens it the same way.
 pub fn remember_size(window: &adw::ApplicationWindow, settings: &Settings) {
     let (width, height) = window.default_size();
@@ -108,6 +107,7 @@ pub fn remember_size(window: &adw::ApplicationWindow, settings: &Settings) {
     });
 }
 
+/// The ☰ menu; it follows the "Show Zoom in Menu" setting.
 fn main_menu_button(settings: &Settings) -> gtk::MenuButton {
     let button = gtk::MenuButton::builder()
         .icon_name("open-menu-symbolic")

@@ -89,6 +89,11 @@ fn account_row(
         move |row| {
             let name = accounts::clean_name(&row.text());
             if name.is_empty() {
+                // An account needs a name: show the one it keeps.
+                let saved = settings.get().accounts.into_iter().find(|a| a.id == id);
+                if let Some(account) = saved {
+                    row.set_text(&account.name);
+                }
                 return;
             }
             row.set_text(&name);
@@ -111,10 +116,12 @@ fn account_row(
         .sensitive(!only_one)
         .css_classes(["flat"])
         .build();
+    // Weak: the rows own this button, so a strong reference would keep
+    // them, and the whole list, alive after the dialog closes.
     remove.connect_clicked(glib::clone!(
         #[weak]
         list,
-        #[strong]
+        #[weak]
         rows,
         #[strong]
         settings,

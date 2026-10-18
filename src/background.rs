@@ -37,6 +37,7 @@ pub fn attach(app: &adw::Application, main: &Main) {
         });
     }
 
+    let for_dock = connection.clone();
     let count = Rc::new(std::cell::Cell::new(0));
     let settings = main.settings.clone();
     let update = glib::clone!(
@@ -56,6 +57,7 @@ pub fn attach(app: &adw::Application, main: &Main) {
             badge::set_count(&connection, if values.dock_badge { count.get() } else { 0 });
         }
     );
+    badge::connect_dock_appeared(&for_dock, update.clone());
     let on_change = update.clone();
     main.settings.connect_changed(move |_| on_change());
     main.accounts.connect_unread(move |total| {
@@ -77,6 +79,17 @@ fn new_tray(
             #[weak]
             window,
             move || toggle(&window)
+        )),
+        show: Box::new(glib::clone!(
+            #[weak]
+            window,
+            move |show| {
+                if show {
+                    window.present();
+                } else {
+                    window.set_visible(false);
+                }
+            }
         )),
         settings: Box::new(glib::clone!(
             #[weak]

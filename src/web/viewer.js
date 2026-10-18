@@ -29,7 +29,9 @@
   const shown = new WeakMap();
   const zooms = new WeakMap();
   const zoom = (element) => {
-    const transition = /transition:\s*transform\s+(\d+)ms\s+([^;]+)/.exec(
+    // The easing ends at the next property (",") or declaration (";"), but
+    // may hold commas itself: cubic-bezier(0.1, 0.82, 0.25, 1).
+    const transition = /transition:\s*transform\s+(\d+)ms\s+([^;,(]+(?:\([^)]*\))?)/.exec(
       element.getAttribute("style") || "",
     );
     if (!transition) return;

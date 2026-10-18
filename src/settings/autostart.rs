@@ -2,6 +2,8 @@
 //! `~/.config/autostart` (created if missing; `~/.config` always exists),
 //! written in the background.
 
+use std::cell::Cell;
+
 use gtk::prelude::*;
 use gtk::{gio, glib};
 
@@ -12,25 +14,41 @@ pub const BACKGROUND_FLAG: &str = "background";
 /// The app ID of early builds, which named their entry after it.
 const OLD_APP_ID: &str = "app.whatsup.WhatsUp";
 
+thread_local! {
+    /// The entry the latest change asked for, (enabled, hidden), until it's written.
+    static WANTED: Cell<Option<(bool, bool)>> = const { Cell::new(None) };
+    /// Whether a change is being written; the next waits for it.
+    static BUSY: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Writes or removes the entry. Changes are written one at a time, in order,
+/// so quickly turning it on and off can't leave the entry in place.
 pub fn apply(enabled: bool, hidden: bool) {
+    WANTED.set(Some((enabled, hidden)));
+    if BUSY.replace(true) {
+        return;
+    }
     let file = gio::File::for_path(
         glib::user_config_dir()
             .join("autostart")
             .join(format!("{APP_ID}.desktop")),
     );
     glib::spawn_future_local(async move {
-        let result = if enabled {
-            write(&file, entry(hidden)).await
-        } else {
-            remove(&file).await
-        };
-        if let Err(err) = result {
-            glib::g_warning!(
-                "whatsup-desktop",
-                "cannot change starting at login: {}",
-                err.message()
-            );
+        while let Some((enabled, hidden)) = WANTED.take() {
+            let result = if enabled {
+                write(&file, entry(hidden)).await
+            } else {
+                remove(&file).await
+            };
+            if let Err(err) = result {
+                glib::g_warning!(
+                    "whatsup-desktop",
+                    "cannot change starting at login: {}",
+                    err.message()
+                );
+            }
         }
+        BUSY.set(false);
     });
 }
 

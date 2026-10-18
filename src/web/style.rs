@@ -15,6 +15,9 @@ const APP_CSS: &str = include_str!("app.css");
 const MEDIA_JS: &str = include_str!("media.js");
 const VIEWER_JS: &str = include_str!("viewer.js");
 const WHATSAPP: [&str; 1] = ["https://web.whatsapp.com/*"];
+/// Which `apply` last started on a content manager, so an older one that
+/// finishes reading later can't swap stale contents in.
+const GENERATION: &str = "whatsup-desktop-style-generation";
 
 /// Loads everything into `content`, replacing what it held. The files are
 /// read first and swapped in at once, so overlapping reloads can't mix.
@@ -33,12 +36,18 @@ pub struct Extras {
 
 /// `load`, finishing when everything is in place.
 pub async fn apply(content: webkit::UserContentManager, extras: Extras) {
+    let this = generation(&content).wrapping_add(1);
+    // SAFETY: only this module stores `GENERATION`, always as a `u64`.
+    unsafe { content.set_data(GENERATION, this) };
     let css = read_all(&paths::css_dir(), "css").await;
     let js = if extras.scripts {
         read_all(&paths::js_dir(), "js").await
     } else {
         Vec::new()
     };
+    if generation(&content) != this {
+        return;
+    }
     content.remove_all_style_sheets();
     content.remove_all_scripts();
     add_style_sheet(&content, APP_CSS);
@@ -54,6 +63,12 @@ pub async fn apply(content: webkit::UserContentManager, extras: Extras) {
     for source in &js {
         add_script(&content, source, webkit::UserScriptInjectionTime::End);
     }
+}
+
+/// The number of the latest `apply` on `content`.
+fn generation(content: &webkit::UserContentManager) -> u64 {
+    // SAFETY: only this module stores `GENERATION`, always as a `u64`.
+    unsafe { content.data::<u64>(GENERATION).map_or(0, |g| *g.as_ref()) }
 }
 
 /// The contents of the `.<extension>` files directly in `dir`, in name order.

@@ -64,27 +64,75 @@ impl Entry {
     }
 }
 
-/// The whole menu as dbusmenu's `(ia{sv}av)` layout.
-pub fn layout(window_visible: bool) -> Variant {
+const ROOT: i32 = 0;
+
+type Props = Vec<(&'static str, Variant)>;
+
+/// The root's properties and its children's ids and properties.
+fn entries(window_visible: bool) -> (Props, Vec<(i32, Props)>) {
     let show_hide = if window_visible {
         "Hide WhatsUp"
     } else {
         "Show WhatsUp"
     };
+    let root = vec![("children-display", "submenu".to_variant())];
     let children = vec![
-        item(Entry::ShowHide as i32, &[("label", show_hide.to_variant())]),
-        item(
-            Entry::Settings as i32,
-            &[("label", "Settings".to_variant())],
+        (
+            Entry::ShowHide as i32,
+            vec![("label", show_hide.to_variant())],
         ),
-        item(SEPARATOR, &[("type", "separator".to_variant())]),
-        item(Entry::Quit as i32, &[("label", "Quit".to_variant())]),
+        (
+            Entry::Settings as i32,
+            vec![("label", "Settings".to_variant())],
+        ),
+        (SEPARATOR, vec![("type", "separator".to_variant())]),
+        (Entry::Quit as i32, vec![("label", "Quit".to_variant())]),
     ];
-    node(0, &[("children-display", "submenu".to_variant())], children)
+    (root, children)
 }
 
-fn item(id: i32, props: &[(&str, Variant)]) -> Variant {
-    node(id, props, Vec::new())
+/// The menu as dbusmenu's `(ia{sv}av)` layout, from item `id` (0 for the
+/// whole menu) down, or `None` when there's no such item.
+pub fn subtree(window_visible: bool, id: i32) -> Option<Variant> {
+    let (root, children) = entries(window_visible);
+    if id == ROOT {
+        let children = children
+            .iter()
+            .map(|(id, props)| node(*id, props, Vec::new()));
+        return Some(node(ROOT, &root, children.collect()));
+    }
+    let (id, props) = children.into_iter().find(|(child, _)| *child == id)?;
+    Some(node(id, &props, Vec::new()))
+}
+
+/// The properties of items `ids` (all items when empty), limited to `names`
+/// (all when empty), as dbusmenu's `a(ia{sv})`.
+pub fn group_properties(window_visible: bool, ids: &[i32], names: &[String]) -> Variant {
+    let (root, children) = entries(window_visible);
+    let items = std::iter::once((ROOT, root)).chain(children);
+    let wanted = items.filter(|(id, _)| ids.is_empty() || ids.contains(id));
+    let groups: Vec<(i32, HashMap<String, Variant>)> = wanted
+        .map(|(id, props)| {
+            let props = props
+                .into_iter()
+                .filter(|(name, _)| names.is_empty() || names.iter().any(|n| n == name))
+                .map(|(name, value)| (name.to_owned(), value))
+                .collect();
+            (id, props)
+        })
+        .collect();
+    groups.to_variant()
+}
+
+/// Property `name` of item `id`, if it has one.
+pub fn property(window_visible: bool, id: i32, name: &str) -> Option<Variant> {
+    let (root, children) = entries(window_visible);
+    let props = if id == ROOT {
+        root
+    } else {
+        children.into_iter().find(|(child, _)| *child == id)?.1
+    };
+    props.into_iter().find(|(n, _)| *n == name).map(|(_, v)| v)
 }
 
 fn node(id: i32, props: &[(&str, Variant)], children: Vec<Variant>) -> Variant {
@@ -95,6 +143,10 @@ fn node(id: i32, props: &[(&str, Variant)], children: Vec<Variant>) -> Variant {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn layout(window_visible: bool) -> Variant {
+        subtree(window_visible, ROOT).unwrap()
+    }
 
     #[test]
     fn layout_has_the_dbusmenu_type() {
@@ -113,6 +165,38 @@ mod tests {
         let text = |visible| layout(visible).print(false).to_string();
         assert!(text(true).contains("Hide WhatsUp"));
         assert!(text(false).contains("Show WhatsUp"));
+    }
+
+    #[test]
+    fn subtree_finds_items() {
+        assert_eq!(
+            subtree(true, ROOT).unwrap().child_value(0).get(),
+            Some(ROOT)
+        );
+        let quit = subtree(true, Entry::Quit as i32).unwrap();
+        assert_eq!(quit.child_value(0).get(), Some(Entry::Quit as i32));
+        assert_eq!(quit.child_value(2).n_children(), 0);
+        assert!(subtree(true, 99).is_none());
+    }
+
+    #[test]
+    fn group_properties_filter_ids_and_names() {
+        let all = group_properties(true, &[], &[]);
+        assert_eq!(all.type_().as_str(), "a(ia{sv})");
+        assert_eq!(all.n_children(), 5);
+        let ids = [Entry::ShowHide as i32, SEPARATOR];
+        let some = group_properties(false, &ids, &["label".to_owned()]);
+        assert_eq!(some.n_children(), 2);
+        assert!(some.print(false).contains("Show WhatsUp"));
+        assert!(!some.print(false).contains("separator"));
+    }
+
+    #[test]
+    fn property_reads_one_value() {
+        let label = property(false, Entry::ShowHide as i32, "label").unwrap();
+        assert_eq!(label.str(), Some("Show WhatsUp"));
+        assert!(property(false, Entry::Quit as i32, "type").is_none());
+        assert!(property(false, 99, "label").is_none());
     }
 
     #[test]
