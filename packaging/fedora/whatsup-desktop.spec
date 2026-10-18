@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.0.2
+Version:        1.0.3
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -71,6 +71,11 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.3-1
+- The tray icon now looks like the app icon: a green speech bubble with
+  a white rising chevron, instead of a phone handset
+- The app icon uses the tray's flat green and white
+
 * Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.2-1
 - Videos in chats play, with sound: WebKitGTK garbled videos it read
   from memory, and a saved volume of 0 muted every later video
