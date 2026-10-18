@@ -1,5 +1,6 @@
 # whatsup-desktop
 
+An unofficial WhatsApp client for Linux, built as a personal-use project:
 WhatsApp Web in a native GNOME window. whatsup-desktop runs WhatsApp's
 official web client in WebKitGTK, inside a GTK4 + libadwaita app written in
 Rust for speed and a light footprint.
