@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.0.5
+Version:        1.0.6
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -63,6 +63,9 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.6-1
+- Drop Debian, Ubuntu and openSUSE packaging; Fedora and Arch only
+
 * Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.5-1
 - WhatsUp recovers more smoothly when WhatsApp Web's page crashes: it
   backs off instead of reloading in a tight loop, and keeps retrying
