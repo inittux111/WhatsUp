@@ -1,6 +1,6 @@
 //! What WhatsUp adds to WhatsApp Web: its own style fixes (`app.css`) and
-//! script fixes (`media.js`, `viewer.js`), the system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in `~/.config/whatsup-desktop/css`, such as
-//! Abyss's), and, only when the user turned them on, their scripts (every
+//! script fixes (`media.js`, `viewer.js`), the system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in
+//! `~/.config/whatsup-desktop/css`), and, only when the user turned them on, their scripts (every
 //! `.js` file in `~/.config/whatsup-desktop/js`). Files are read in the background.
 
 use std::path::Path;
@@ -154,8 +154,8 @@ mod tests {
 
     #[test]
     fn picks_only_matching_files() {
-        assert!(has_extension(Path::new("abyss.css"), "css"));
-        assert!(!has_extension(Path::new("abyss.css.bak"), "css"));
+        assert!(has_extension(Path::new("custom.css"), "css"));
+        assert!(!has_extension(Path::new("custom.css.bak"), "css"));
         assert!(!has_extension(Path::new("css"), "css"));
         assert!(has_extension(Path::new("tweak.js"), "js"));
         assert!(!has_extension(Path::new("tweak.css"), "js"));

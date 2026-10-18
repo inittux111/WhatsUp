@@ -1,8 +1,8 @@
 //! The system theme's colours for WhatsApp Web. GTK has no call that returns
 //! a theme colour, so invisible probe widgets each take one of libadwaita's
 //! colour variables as their text colour, and WhatsUp reads that back. This
-//! sees whatever the active theme sets, Adwaita's or a custom one's such as
-//! Abyss, and is read again whenever light/dark or the accent colour changes.
+//! sees whatever the active theme sets, Adwaita's or a custom one's, and is
+//! read again whenever light/dark or the accent colour changes.
 
 mod css;
 

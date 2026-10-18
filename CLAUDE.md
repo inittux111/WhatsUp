@@ -54,10 +54,10 @@ WhatsUp is a WhatsApp client for Linux/GNOME, for personal use only (not distrib
 
 ## Theming
 
-The app must follow the active system theme, whatever it is. The user's own theme is Abyss (`../abyss-theme`), which themes libadwaita apps by linking `~/.config/gtk-4.0/gtk.css` to the current scheme's stylesheet:
+The app must follow the active system theme, whatever it is. Themes commonly do this by linking `~/.config/gtk-4.0/gtk.css` to the current scheme's stylesheet; the app must work with any of them, not any one theme in particular:
 
 - The native parts are plain libadwaita, so they pick up any theme automatically; the app must not override it: use libadwaita's named colors (`@accent_bg_color`, `@window_bg_color`, ...) in app CSS, never hardcoded colors, and don't force a `GTK_THEME` or color scheme.
-- WhatsApp Web gets the theme's colors from `theme/`: invisible probe widgets each take one libadwaita color variable (`--window-bg-color`, `--accent-bg-color`, ...) as their text color, `theme/mod.rs` reads them back (again on light/dark, accent and contrast changes), and `theme/css.rs` maps them onto WhatsApp's `--WDS-*` variables. This works for Adwaita, Abyss and any other libadwaita theme, without a theme-specific stylesheet (setting: Use System Colours). User stylesheets, such as Abyss's own `../abyss-theme/src/zapzap/Abyss.css`, go on top.
+- WhatsApp Web gets the theme's colors from `theme/`: invisible probe widgets each take one libadwaita color variable (`--window-bg-color`, `--accent-bg-color`, ...) as their text color, `theme/mod.rs` reads them back (again on light/dark, accent and contrast changes), and `theme/css.rs` maps them onto WhatsApp's `--WDS-*` variables. This works for Adwaita and any other libadwaita theme, without a theme-specific stylesheet (setting: Use System Colours). A user who wants a different look can still drop their own stylesheets on top.
 
 ## Development container
 
