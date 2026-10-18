@@ -46,7 +46,7 @@ whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 ```
 
-The RPM provided on the releases page is only supported for Fedora 44. My
+The RPM provided on the [releases](https://github.com/inittux111/whatsup-desktop/releases/latest) page is only supported for Fedora 44. My
 personal [COPR repo](https://copr.fedorainfracloud.org/coprs/inittux0101/pkgs-upstream-latest)
 provides builds for other recent Fedora versions.
 
