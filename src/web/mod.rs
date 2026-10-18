@@ -8,6 +8,10 @@ mod style;
 
 pub use style::Extras;
 
+use std::cell::Cell;
+use std::rc::Rc;
+use std::time::{Duration, Instant};
+
 use gtk::prelude::*;
 use gtk::{gio, glib};
 use webkit::prelude::*;
@@ -15,6 +19,12 @@ use webkit::prelude::*;
 use crate::paths::AccountDirs;
 
 pub const WHATSAPP_URL: &str = "https://web.whatsapp.com/";
+
+/// A page that ran at least this long before its web process ended is treated
+/// as a fresh crash, not part of a crash loop.
+const CRASH_HEALTHY: Duration = Duration::from_secs(60);
+/// The longest WhatsUp waits before reloading after repeated quick crashes.
+const CRASH_BACKOFF_MAX: Duration = Duration::from_secs(30);
 
 /// Sets up the environment the web processes inherit, working around
 /// problems in the graphics driver and the sound system. Must run first in
@@ -51,16 +61,41 @@ pub fn build(dirs: &AccountDirs, extras: Extras) -> webkit::WebView {
     });
     view.connect_permission_request(permissions::decide);
     // A crashed page keeps showing its last frame but no longer reacts to
-    // anything, so load WhatsApp again. Removing an account terminates its
-    // process on purpose (`TerminatedByApi`); that one stays closed.
-    view.connect_web_process_terminated(|view, reason| {
-        if reason != webkit::WebProcessTerminationReason::TerminatedByApi {
-            glib::g_warning!(
-                "whatsup-desktop",
-                "web process ended ({reason:?}), reloading"
-            );
-            view.load_uri(WHATSAPP_URL);
+    // anything, so load WhatsApp again. Repeated quick crashes back off, so a
+    // page that keeps dying (e.g. a recurring driver fault) can't spin in a
+    // tight reload loop. Removing an account terminates its process on purpose
+    // (`TerminatedByApi`); that one stays closed.
+    let rapid_crashes = Rc::new(Cell::new(0u32));
+    let last_start = Rc::new(Cell::new(Instant::now()));
+    view.connect_web_process_terminated(move |view, reason| {
+        if reason == webkit::WebProcessTerminationReason::TerminatedByApi {
+            return;
         }
+        let count = if last_start.get().elapsed() >= CRASH_HEALTHY {
+            0
+        } else {
+            rapid_crashes.get().saturating_add(1)
+        };
+        rapid_crashes.set(count);
+        let delay = reload_delay(count);
+        glib::g_warning!(
+            "whatsup-desktop",
+            "web process ended ({reason:?}), reloading in {}s",
+            delay.as_secs()
+        );
+        glib::timeout_add_local_once(
+            delay,
+            glib::clone!(
+                #[weak]
+                view,
+                #[strong]
+                last_start,
+                move || {
+                    last_start.set(Instant::now());
+                    view.load_uri(WHATSAPP_URL);
+                }
+            ),
+        );
     });
     if let Some(context) = view.context() {
         permissions::grant_notifications(&context);
@@ -127,6 +162,21 @@ fn spell_languages(names: &[glib::GString]) -> Vec<String> {
     languages
 }
 
+/// How long to wait before reloading after the web process ended, given how
+/// many times it has already crashed in quick succession. A one-off crash
+/// reloads at once; repeated quick crashes back off (1s, 2s, 4s, …, capped at
+/// `CRASH_BACKOFF_MAX`), so a page that keeps crashing can't spin in a tight
+/// reload loop, yet WhatsUp never gives up and stops retrying.
+fn reload_delay(rapid_crashes: u32) -> Duration {
+    match rapid_crashes {
+        0 => Duration::ZERO,
+        n => {
+            let secs = 1u64.checked_shl(n - 1).unwrap_or(u64::MAX);
+            CRASH_BACKOFF_MAX.min(Duration::from_secs(secs))
+        }
+    }
+}
+
 fn settings() -> webkit::Settings {
     let settings = webkit::Settings::new();
     settings.set_enable_developer_extras(cfg!(debug_assertions));
@@ -153,6 +203,17 @@ pub fn open_externally(view: &webkit::WebView, uri: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reload_backs_off_then_caps() {
+        assert_eq!(reload_delay(0), Duration::ZERO);
+        assert_eq!(reload_delay(1), Duration::from_secs(1));
+        assert_eq!(reload_delay(2), Duration::from_secs(2));
+        assert_eq!(reload_delay(3), Duration::from_secs(4));
+        assert_eq!(reload_delay(5), Duration::from_secs(16));
+        assert_eq!(reload_delay(6), CRASH_BACKOFF_MAX); // 32s capped to 30s
+        assert_eq!(reload_delay(100), CRASH_BACKOFF_MAX); // no overflow
+    }
 
     #[test]
     fn spell_languages_are_plain_locales() {
