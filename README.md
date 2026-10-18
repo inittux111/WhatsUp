@@ -40,7 +40,7 @@ WhatsApp LLC.
 ## Installing
 
 whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
-1.8 or newer). Build the RPM (see below), then:
+1.8 or newer). Build the RPM ([see below](#building-from-source)), then:
 
 ```sh
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
