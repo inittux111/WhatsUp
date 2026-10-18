@@ -1,5 +1,5 @@
-//! What WhatsUp adds to WhatsApp Web: its own style fixes (`app.css`), the
-//! system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in `~/.config/whatsup-desktop/css`, such as
+//! What WhatsUp adds to WhatsApp Web: its own style fixes (`app.css`) and
+//! media fix (`media.js`), the system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in `~/.config/whatsup-desktop/css`, such as
 //! Abyss's), and, only when the user turned them on, their scripts (every
 //! `.js` file in `~/.config/whatsup-desktop/js`). Files are read in the background.
 
@@ -12,6 +12,7 @@ use gtk::prelude::*;
 use crate::paths;
 
 const APP_CSS: &str = include_str!("app.css");
+const MEDIA_JS: &str = include_str!("media.js");
 const WHATSAPP: [&str; 1] = ["https://web.whatsapp.com/*"];
 
 /// Loads everything into `content`, replacing what it held. The files are
@@ -46,8 +47,10 @@ pub async fn apply(content: webkit::UserContentManager, extras: Extras) {
     for source in &css {
         add_style_sheet(&content, source);
     }
+    // Before WhatsApp's own scripts, so its videos already get the fix.
+    add_script(&content, MEDIA_JS, webkit::UserScriptInjectionTime::Start);
     for source in &js {
-        add_script(&content, source);
+        add_script(&content, source, webkit::UserScriptInjectionTime::End);
     }
 }
 
@@ -113,11 +116,15 @@ fn add_style_sheet(content: &webkit::UserContentManager, source: &str) {
     content.add_style_sheet(&sheet);
 }
 
-fn add_script(content: &webkit::UserContentManager, source: &str) {
+fn add_script(
+    content: &webkit::UserContentManager,
+    source: &str,
+    time: webkit::UserScriptInjectionTime,
+) {
     let script = webkit::UserScript::new(
         source,
         webkit::UserContentInjectedFrames::TopFrame,
-        webkit::UserScriptInjectionTime::End,
+        time,
         &WHATSAPP,
         &[],
     );

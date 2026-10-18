@@ -19,6 +19,6 @@ mod window;
 use gtk::glib;
 
 fn main() -> glib::ExitCode {
-    web::prepare_for_driver();
+    web::prepare_environment();
     app::run()
 }

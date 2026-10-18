@@ -1,11 +1,11 @@
 //! The web view that runs WhatsApp Web, locked down to WhatsApp's own site.
 
+mod audio;
 mod nvidia;
 mod permissions;
 mod policy;
 mod style;
 
-pub use nvidia::prepare as prepare_for_driver;
 pub use style::Extras;
 
 use gtk::prelude::*;
@@ -15,6 +15,14 @@ use webkit::prelude::*;
 use crate::paths::AccountDirs;
 
 pub const WHATSAPP_URL: &str = "https://web.whatsapp.com/";
+
+/// Sets up the environment the web processes inherit, working around
+/// problems in the graphics driver and the sound system. Must run first in
+/// `main`, before any thread starts.
+pub fn prepare_environment() {
+    nvidia::prepare();
+    audio::prepare();
+}
 
 /// Builds a web view for one account and starts loading WhatsApp Web.
 /// `extras` are the theme colours and user scripts to add.
