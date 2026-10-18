@@ -20,18 +20,10 @@ BuildRequires:  pkgconfig(webkitgtk-6.0)
 BuildRequires:  desktop-file-utils
 BuildRequires:  make
 
-# Fedora and openSUSE name a few packages differently.
-%if 0%{?suse_version}
-BuildRequires:  appstream-glib
-Requires:       libadwaita-1-0
-Requires:       libwebkitgtk-6_0-4
-Requires:       google-noto-coloremoji-fonts
-%else
 BuildRequires:  libappstream-glib
 Requires:       libadwaita
 Requires:       webkitgtk6.0
 Requires:       google-noto-color-emoji-fonts
-%endif
 
 %description
 WhatsUp runs WhatsApp Web in a native GNOME window that stays responsive,

@@ -46,8 +46,7 @@ whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 ```
 
-Ubuntu 26.04+, Debian testing, Arch and openSUSE build too, but aren't
-officially supported;
+Arch builds too, but isn't officially supported;
 see [Other systems](#other-systems-not-officially-supported).
 
 ## Settings
@@ -141,33 +140,13 @@ toolbox run -c whatsup-desktop make rpm        # build the RPM into target/rpm/R
 
 ### Other systems (not officially supported)
 
-These build fine, but aren't tested with every release.
-
-On **Ubuntu 26.04+ and Debian testing** (Debian 13's libadwaita and GTK are
-too old), build with Podman, in an Ubuntu 26.04 container
-(`packaging/debian/Containerfile`); the first run builds the container image,
-later runs reuse it:
-
-```sh
-sudo apt install podman make
-make container-deb                     # build the .deb into target/deb/
-sudo apt install ./target/deb/whatsup-desktop_*.deb
-```
+This builds fine, but isn't tested with every release.
 
 On **Arch**, the package recipe is in `packaging/arch`:
 
 ```sh
 sudo pacman -S --needed base-devel rust libadwaita gtk4 webkitgtk-6.0 noto-fonts-emoji
 cd packaging/arch && makepkg -si
-```
-
-On **openSUSE Tumbleweed**, the RPM spec works as on Fedora:
-
-```sh
-sudo zypper install rpm-build make git cargo desktop-file-utils appstream-glib \
-    'pkgconfig(libadwaita-1)' 'pkgconfig(gtk4)' 'pkgconfig(webkitgtk-6.0)'
-make rpm
-sudo zypper install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 ```
 
 Notifications and starting at login need the installed package, as GNOME only

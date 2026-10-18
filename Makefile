@@ -1,6 +1,5 @@
 # Builds, installs and packages WhatsUp.
 #   Fedora-based systems, in the whatsup-desktop toolbox:  make rpm
-#   Debian-based systems, with Podman:            make container-deb
 #   Anything else, after `cargo build --release`:  make install
 NAME    := whatsup-desktop
 VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
@@ -9,9 +8,7 @@ SRC     := $(NAME)-$(VERSION)
 SPEC    := packaging/fedora/$(NAME).spec
 SPEC_VERSION := $(shell sed -n 's/^Version: *//p' $(SPEC))
 
-.PHONY: rpm sources clean-rpm deb container-deb deb-image install uninstall
-
-DEB_IMAGE := localhost/whatsup-desktop-deb-build
+.PHONY: rpm sources clean-rpm install uninstall
 
 rpm: sources
 	rpmbuild -ba --define "_topdir $(TOP)" $(SPEC)
@@ -30,22 +27,6 @@ sources: clean-rpm
 
 clean-rpm:
 	rm -rf $(TOP)
-
-# The .deb, built inside the Debian-based container (Ubuntu 26.04).
-deb:
-	packaging/debian/build.sh
-	@find target/deb -maxdepth 1 -name '*.deb' -print
-
-# Runs `make deb` in that container from any system with Podman; the
-# package lands in target/deb/. The container builds as the current user,
-# with Cargo's downloads kept in target/deb-cargo for the next run.
-container-deb: deb-image
-	podman run --rm --userns=keep-id --user $$(id -u):$$(id -g) \
-	    -v $(CURDIR):/src:Z -e CARGO_HOME=/src/target/deb-cargo \
-	    $(DEB_IMAGE) make deb
-
-deb-image:
-	podman build -t $(DEB_IMAGE) packaging/debian
 
 # Installs a release build. Packagers stage it with DESTDIR=; PREFIX is where
 # it lives on the system (/usr for packages, /usr/local by hand).
