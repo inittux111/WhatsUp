@@ -21,3 +21,16 @@
 ):not(:has([data-testid^="link_device"], [data-testid^="link-device"])) {
   display: none !important;
 }
+
+/* WebKitGTK runs these on its compositor, a frame out of step with the page,
+   so opening and zooming a picture flash (see viewer.js, which plays the
+   fade-in and zoom on the page's thread instead). The picture's own opening
+   movement is stepped by WhatsApp's script every frame; without its extra
+   CSS transition each step simply shows. */
+[data-testid="media-viewer-modal"] {
+  animation: none !important;
+}
+[data-testid="media-viewer-modal"] .velocity-animating,
+[data-testid="media-viewer-modal"] div[style*="transition: transform"] {
+  transition: none !important;
+}
