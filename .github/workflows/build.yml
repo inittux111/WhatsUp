@@ -1,10 +1,12 @@
 # Builds and checks WhatsUp on Fedora 44, the officially supported target, on
-# every push to master and every pull request: formatting, clippy, tests and a
-# build, using the same libraries as the development toolbox. Running in a
-# Fedora 44 container (not the Ubuntu runner) is deliberate: it has the GNOME
-# versions WhatsUp pins (libadwaita 1.8, GTK 4.20, WebKitGTK 6.0 2.50), which
-# the Ubuntu runners don't. Actions are pinned to exact commits so a moved tag
-# can't change what runs.
+# every push to master and every pull request, using the same libraries as the
+# development toolbox. Running in a Fedora 44 container (not the Ubuntu runner)
+# is deliberate: it has the GNOME versions WhatsUp pins (libadwaita 1.8,
+# GTK 4.20, WebKitGTK 6.0 2.50), which the Ubuntu runners don't.
+#
+# Linting and building are separate jobs so each always reports: a clippy
+# warning can't hide whether the tests pass, and the reverse. Actions are
+# pinned to exact commits so a moved tag can't change what runs.
 name: Build and test
 
 on:
@@ -17,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     container: fedora:44
     steps:
@@ -31,6 +33,16 @@ jobs:
         run: cargo fmt --check
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
+
+  build:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf install -y git cargo gcc pkgconf-pkg-config \
+            libadwaita-devel webkitgtk6.0-devel
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Tests
         run: cargo test
       - name: Build
