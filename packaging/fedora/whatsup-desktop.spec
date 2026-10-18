@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.0.1
+Version:        1.0.2
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -71,6 +71,13 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.2-1
+- Videos in chats play, with sound: WebKitGTK garbled videos it read
+  from memory, and a saved volume of 0 muted every later video
+- Smooth pictures and animations on NVIDIA again, with every reaction
+  emoji shown: only WebKit's GL video sink is turned off there now
+- Pictures no longer flash when they open, zoom or close
+
 * Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.1-1
 - Release the NVIDIA graphics fix of 1.0.0-3 as its own version, so the
   RPM, deb, COPR build and GitHub release all match
