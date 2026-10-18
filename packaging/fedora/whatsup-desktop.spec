@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.0.3
+Version:        1.0.4
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -71,6 +71,19 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.4-1
+- Starting at login no longer brings up the window when WhatsUp is
+  already running
+- The tray menu's Hide WhatsUp hides the window even when it isn't in
+  front, and the tray menu follows the dbusmenu specification
+- The dock badge comes back after unlocking the screen
+- Settings are always saved readable only by you, and quickly turning
+  Start at Login on and off can't leave it on
+- Download names can't become hidden files or disguise their extension,
+  and keep their extension when shortened
+- Fixes for reloading custom stylesheets and scripts, the picture
+  viewer's zoom animation and the Accounts settings page
+
 * Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.3-1
 - The tray icon now looks like the app icon: a green speech bubble with
   a white rising chevron, instead of a phone handset
