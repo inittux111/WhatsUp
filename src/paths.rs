@@ -16,7 +16,16 @@ pub struct AccountDirs {
 }
 
 /// The folders for `account`, created private if they don't exist yet.
+///
+/// `account` must be an id that passed `settings::accounts::is_id`, so the
+/// paths stay inside WhatsUp's accounts folders; any other id is refused.
 pub fn account_dirs(account: &str) -> io::Result<AccountDirs> {
+    if !crate::settings::accounts::is_id(account) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "invalid account id",
+        ));
+    }
     let dirs = AccountDirs {
         data: account_path(&glib::user_data_dir(), account),
         cache: account_path(&glib::user_cache_dir(), account),
@@ -92,6 +101,14 @@ mod tests {
     fn account_path_is_per_account() {
         let path = account_path(Path::new("/base"), "default");
         assert_eq!(path, Path::new("/base/whatsup-desktop/accounts/default"));
+    }
+
+    #[test]
+    fn account_dirs_refuses_an_invalid_id() {
+        match account_dirs("../etc") {
+            Err(err) => assert_eq!(err.kind(), io::ErrorKind::InvalidInput),
+            Ok(_) => panic!("an invalid account id must be refused"),
+        }
     }
 
     #[test]

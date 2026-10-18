@@ -132,7 +132,7 @@ impl Settings {
 
 fn write_private(path: &std::path::Path, data: &str) -> std::io::Result<()> {
     use std::io::Write;
-    use std::os::unix::fs::OpenOptionsExt;
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     let tmp = path.with_extension("ini.tmp");
     let mut file = std::fs::OpenOptions::new()
         .write(true)
@@ -140,6 +140,9 @@ fn write_private(path: &std::path::Path, data: &str) -> std::io::Result<()> {
         .truncate(true)
         .mode(0o600)
         .open(&tmp)?;
+    // `mode` above only applies when the file is created; tighten a reused
+    // temp too, so the settings can never be left readable by others.
+    file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
     file.write_all(data.as_bytes())?;
     file.sync_all()?;
     std::fs::rename(tmp, path)
