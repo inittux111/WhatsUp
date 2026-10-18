@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.0.4
+Version:        1.0.5
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -71,6 +71,12 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.5-1
+- WhatsUp recovers more smoothly when WhatsApp Web's page crashes: it
+  backs off instead of reloading in a tight loop, and keeps retrying
+  until it recovers
+- Tightened file permissions for account folders and the settings file
+
 * Sun Oct 18 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.0.4-1
 - Starting at login no longer brings up the window when WhatsUp is
   already running
