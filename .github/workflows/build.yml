@@ -14,9 +14,11 @@ on:
     branches: [master]
     paths-ignore:
       - README.md
+      - CLAUDE.md
   pull_request:
     paths-ignore:
       - README.md
+      - CLAUDE.md
   workflow_dispatch:
 
 permissions:
