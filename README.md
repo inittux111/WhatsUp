@@ -46,7 +46,8 @@ whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 ```
 
-Debian, Ubuntu, Arch and openSUSE build too, but aren't officially supported;
+Ubuntu 26.04+, Debian testing, Arch and openSUSE build too, but aren't
+officially supported;
 see [Other systems](#other-systems-not-officially-supported).
 
 ## Settings
@@ -142,8 +143,8 @@ toolbox run -c whatsup-desktop make rpm        # build the RPM into target/rpm/R
 
 These build fine, but aren't tested with every release.
 
-On **Debian and Ubuntu** (Ubuntu 26.04+ or Debian testing; Debian 13's
-libadwaita is too old), build with Podman, in an Ubuntu 26.04 container
+On **Ubuntu 26.04+ and Debian testing** (Debian 13's libadwaita and GTK are
+too old), build with Podman, in an Ubuntu 26.04 container
 (`packaging/debian/Containerfile`); the first run builds the container image,
 later runs reuse it:
 
