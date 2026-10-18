@@ -99,3 +99,11 @@ The user installs the package on the host (`sudo dnf install ./<file>.rpm`).
 ## Verification
 
 The app is done when the user can do everything in it that they can do in ZapZap. Automated tests cover the logic, but feature parity is checked by hand. When you finish a phase or feature, tell the user what to try and how it should behave. Commit after the user confirms a phase; push only when asked.
+
+Test anything graphical or media-related on the host before handing it over, not only in the toolbox. The toolbox has no NVIDIA libraries and other GStreamer plugins, so it hides driver and rendering bugs. The user's machine has an NVIDIA GPU (proprietary driver, Wayland); some bugs only show there (the GStreamer GL crash), others on any GPU (garbled blob videos, a saved volume of 0, compositor animations a frame out of step). Check, with and without the change:
+
+- **Picture viewer:** open, zoom in, zoom out and close a picture without flashes or judder.
+- **Video:** a chat video plays with picture and sound; drawing it onto a canvas doesn't crash the web process (`coredumpctl`).
+- **Rendering:** reaction emoji all show, scrolling stays smooth, and `webkit://gpu` still reports the DMA-BUF renderer.
+
+One-frame flashes are hard to see by eye: capture the frames WebKit hands to GTK (a temporary tick callback on the web view rendering `gtk::WidgetPaintable` to textures), drive the page through the remote inspector (`WEBKIT_INSPECTOR_HTTP_SERVER`) and count frames that differ from both neighbours. Keep such debugging code out of commits, and quit test builds with `gapplication action app.whatsup_desktop.WhatsUp quit`: killing them can sign the user out of WhatsApp.
