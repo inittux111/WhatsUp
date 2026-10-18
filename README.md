@@ -26,9 +26,9 @@ Rust for speed and a light footprint.
 
 ## Use at your own risk
 
-whatsup-desktop is an unofficial, personal project. It isn't affiliated with,
-endorsed by or supported by WhatsApp or Meta; WhatsApp is a trademark of
-WhatsApp LLC.
+whatsup-desktop is an unofficial WhatsApp client for Linux, built as a
+personal-use project. It isn't affiliated with, endorsed by or supported by
+WhatsApp or Meta; WhatsApp is a trademark of WhatsApp LLC.
 
 - It shows WhatsApp's own web client and doesn't use any unofficial protocol,
   but WhatsApp's terms and how they enforce them are up to WhatsApp. Nothing
