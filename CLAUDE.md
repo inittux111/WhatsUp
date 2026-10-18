@@ -8,8 +8,8 @@ WhatsUp is a WhatsApp client for Linux/GNOME, for personal use only (not distrib
 
 - **Approach:** a Rust app that embeds WhatsApp Web in **WebKitGTK** (`webkitgtk6.0`, through the `webkit6` crate), so the account uses WhatsApp's official web client and isn't at risk of a ban. The app around it is native, built with GTK4 + libadwaita (gtk-rs): window, tray icon, notifications, settings, accounts. WebKitGTK was chosen over Chromium (CEF): it's GNOME's GTK4-native engine, already on the system and far easier to package.
 - **No unofficial protocol libraries:** an earlier fully native version built on one was abandoned over the account-ban risk. Don't go back to that approach.
-- **Reference for "done":** ZapZap (https://github.com/rafatosta/zapzap): all of its features, built independently in Rust (not a port of its code). It should look and feel like a modern app made by a professional designer: follow the GNOME Human Interface Guidelines and libadwaita's patterns rather than custom styling.
-- **Why it exists:** ZapZap, written in Python, sometimes stops responding under certain conditions when the GPU is under load, most of all when attaching and sending a file in a chat, and then becomes unresponsive. WhatsUp must stay responsive then; it is built for staying performant under conditions where a Python-based GUI application can become unresponsive, hang and crash.
+- **Design bar:** it should look and feel like a modern app made by a professional designer: follow the GNOME Human Interface Guidelines and libadwaita's patterns rather than custom styling.
+- **Why it exists:** WhatsUp stays responsive under GPU load, where a Python-based GUI application can become unresponsive, hang and crash — most of all when attaching and sending a file in a chat. WhatsUp is built to stay performant in exactly those conditions. (ZapZap, a Python WhatsApp client for GNOME, was the inspiration for building it.)
 - **Autonomy:** make reasonable choices yourself and list your assumptions at the end. Ask the user only about decisions that are hard to reverse.
 - **Workflow:** use the available coding skills while coding, including the Superpowers plugin (enabled in `.claude/settings.json`). Work as a professional software engineer and a professional UI/UX designer would: clean, well-structured, tested code, and an interface that is polished, consistent and easy to use.
 
@@ -34,7 +34,7 @@ WhatsUp is a WhatsApp client for Linux/GNOME, for personal use only (not distrib
 ## Performance
 
 - Nothing slow on the GTK main thread: do disk and network work asynchronously (GIO async APIs or a background thread), never in the code that draws the window.
-- Open files through the GNOME file picker via the desktop portal, asynchronously, so the app never blocks while it's open. This is exactly where ZapZap freezes.
+- Open files through the GNOME file picker via the desktop portal, asynchronously, so the app never blocks while it's open. This is exactly the kind of blocking file operation that makes a GUI freeze.
 - Keep the app light when it's hidden or minimised: don't redraw or do work for anything that isn't visible.
 - Test the attach-and-send flow with a game running, as part of every phase.
 
@@ -97,7 +97,7 @@ The user installs the package on the host (`sudo dnf install ./<file>.rpm`).
 
 ## Verification
 
-The app is done when the user can do everything in it that they can do in ZapZap. Automated tests cover the logic, but feature parity is checked by hand. When you finish a phase or feature, tell the user what to try and how it should behave. Commit after the user confirms a phase; push only when asked.
+Automated tests cover the logic, but behaviour and feel are checked by hand. When you finish a phase or feature, tell the user what to try and how it should behave. Commit after the user confirms a phase; push only when asked.
 
 Test anything graphical or media-related on the host before handing it over, not only in the toolbox. The toolbox has no NVIDIA libraries and other GStreamer plugins, so it hides driver and rendering bugs. The user's machine has an NVIDIA GPU (proprietary driver, Wayland); some bugs only show there (the GStreamer GL crash), others on any GPU (garbled blob videos, a saved volume of 0, compositor animations a frame out of step). Check, with and without the change:
 
