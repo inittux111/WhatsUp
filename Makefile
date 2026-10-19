@@ -1,5 +1,6 @@
 # Builds, installs and packages WhatsUp.
 #   Fedora-based systems, in the whatsup-desktop toolbox:  make rpm
+#   Debian stable, in the whatsup-desktop-deb podman container:  make deb
 #   Anything else, after `cargo build --release`:  make install
 NAME    := whatsup-desktop
 VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
@@ -8,7 +9,7 @@ SRC     := $(NAME)-$(VERSION)
 SPEC    := packaging/fedora/$(NAME).spec
 SPEC_VERSION := $(shell sed -n 's/^Version: *//p' $(SPEC))
 
-.PHONY: rpm sources clean-rpm install uninstall
+.PHONY: rpm sources clean-rpm deb install uninstall
 
 rpm: sources
 	rpmbuild -ba --define "_topdir $(TOP)" $(SPEC)
@@ -27,6 +28,20 @@ sources: clean-rpm
 
 clean-rpm:
 	rm -rf $(TOP)
+
+# Builds the .deb from the committed tree. dpkg-buildpackage expects debian/ at
+# the source root, so packaging/debian is staged there and removed again; it
+# writes the package to the parent directory, which is then moved into
+# target/deb. Run inside the Debian podman container (packaging/debian).
+DEB_OUT := $(CURDIR)/target/deb
+deb:
+	rm -rf debian
+	cp -r packaging/debian debian
+	dpkg-buildpackage -us -uc -b
+	rm -rf debian
+	mkdir -p $(DEB_OUT)
+	mv $(CURDIR)/../$(NAME)*_$(VERSION)_* $(DEB_OUT)/
+	@find $(DEB_OUT) -name '*.deb' -print
 
 # Installs a release build. Packagers stage it with DESTDIR=; PREFIX is where
 # it lives on the system (/usr for packages, /usr/local by hand).

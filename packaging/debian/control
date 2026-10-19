@@ -1,0 +1,33 @@
+Source: whatsup-desktop
+Section: net
+Priority: optional
+Maintainer: Maarten van der Rijst <claude@feedmebits.nl>
+# The Rust toolchain (cargo, rustc) comes from rustup in the build container,
+# not from Debian, whose rustc is older than the gtk-rs crates need; see
+# packaging/debian/Containerfile.
+Build-Depends:
+ debhelper-compat (= 13),
+ pkg-config,
+ make,
+ libgtk-4-dev (>= 4.18),
+ libadwaita-1-dev (>= 1.7),
+ libwebkitgtk-6.0-dev (>= 2.50),
+Standards-Version: 4.7.0
+Homepage: https://github.com/inittux111/whatsup-desktop
+Rules-Requires-Root: no
+
+Package: whatsup-desktop
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ fonts-noto-color-emoji,
+Recommends:
+ hunspell-en-us,
+Description: WhatsApp Web for GNOME
+ WhatsUp runs WhatsApp Web in a native GNOME window that stays responsive,
+ follows your theme and keeps your account data private.
+ .
+ It embeds WhatsApp's official web client in WebKitGTK inside a GTK4 and
+ libadwaita application, and adds multiple accounts, a tray icon, desktop
+ notifications, downloads and editable keyboard shortcuts.

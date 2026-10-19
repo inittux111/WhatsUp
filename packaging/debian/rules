@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+# Builds the Debian package from this source tree, reusing the top-level
+# Makefile's `install` target for the file list (as the RPM and Arch packages
+# do). Crates are fetched from crates.io at build time (--locked pins them to
+# Cargo.lock), so the build needs network; run it in the Debian podman
+# container (see packaging/debian/Containerfile). --no-default-features selects
+# the libadwaita 1.7 shortcuts fallback, since Debian stable has no
+# AdwShortcutsDialog.
+
+export CARGO_HOME = $(CURDIR)/debian/cargo
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	cargo build --release --locked --no-default-features
+
+override_dh_auto_test:
+	cargo test --release --locked --no-default-features
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/whatsup-desktop PREFIX=/usr
+
+override_dh_auto_clean:
+	rm -rf target debian/cargo
