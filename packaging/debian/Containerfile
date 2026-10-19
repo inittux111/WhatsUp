@@ -33,6 +33,10 @@ RUN apt-get update \
       libwebkitgtk-6.0-dev \
       fonts-noto-color-emoji \
       hunspell-en-us \
+      `# Only for running the app in the container to test (run.sh), not for` \
+      `# building the .deb: a software GL driver and a session bus.` \
+      libgl1-mesa-dri \
+      dbus \
  && rm -rf /var/lib/apt/lists/* \
  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
       | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable \
