@@ -1,4 +1,5 @@
 /target
+/debian
 MEMORY.md
 packaging/arch/src/
 packaging/arch/pkg/

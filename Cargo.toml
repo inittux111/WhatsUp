@@ -1,15 +1,26 @@
 [package]
 name = "whatsup-desktop"
-version = "1.0.6"
+version = "1.1.0"
 edition = "2024"
 description = "WhatsApp Web for GNOME"
 license = "GPL-3.0-or-later"
 publish = false
 
+# Base versions are the ones Debian stable (trixie) ships: libadwaita 1.7,
+# GTK 4.18 and WebKitGTK 2.54 (which satisfies v2_50). The adw-shortcuts
+# feature, on by default, raises libadwaita to its 1.8 bindings for the native
+# shortcuts dialog; Debian's package builds with --no-default-features and
+# falls back to a 1.7-compatible one.
 [dependencies]
-adw = { package = "libadwaita", version = "0.9", features = ["v1_8"] }
-gtk = { package = "gtk4", version = "0.11", features = ["v4_20"] }
+adw = { package = "libadwaita", version = "0.9", features = ["v1_7"] }
+gtk = { package = "gtk4", version = "0.11", features = ["v4_18"] }
 webkit = { package = "webkit6", version = "0.6", features = ["v2_50"] }
+
+[features]
+default = ["adw-shortcuts"]
+# AdwShortcutsDialog and AdwShortcutLabel (libadwaita 1.8, GNOME 49). Turn off
+# on libadwaita 1.7 systems, such as Debian stable.
+adw-shortcuts = ["adw/v1_8"]
 
 [profile.release]
 lto = true

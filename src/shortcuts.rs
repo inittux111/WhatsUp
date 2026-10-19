@@ -148,6 +148,8 @@ pub fn resume(app: &adw::Application, settings: &Settings) {
     apply(app, &settings.get());
 }
 
+/// The Keyboard Shortcuts overview. Uses AdwShortcutsDialog (libadwaita 1.8).
+#[cfg(feature = "adw-shortcuts")]
 pub fn show(window: &adw::ApplicationWindow, values: &Values) {
     let dialog = adw::ShortcutsDialog::new();
     dialog.add(section("General", &GENERAL, values));
@@ -156,6 +158,7 @@ pub fn show(window: &adw::ApplicationWindow, values: &Values) {
     dialog.present(Some(window));
 }
 
+#[cfg(feature = "adw-shortcuts")]
 fn section(title: &str, entries: &[Entry], values: &Values) -> adw::ShortcutsSection {
     let section = adw::ShortcutsSection::new(Some(title));
     for entry in entries {
@@ -164,6 +167,44 @@ fn section(title: &str, entries: &[Entry], values: &Values) -> adw::ShortcutsSec
         }
     }
     section
+}
+
+/// The same overview for libadwaita 1.7 (Debian stable), which has no
+/// AdwShortcutsDialog: a plain dialog of preference groups. GtkShortcutLabel
+/// is deprecated in GTK 4.18 but is the only keycap renderer available there.
+#[cfg(not(feature = "adw-shortcuts"))]
+pub fn show(window: &adw::ApplicationWindow, values: &Values) {
+    let page = adw::PreferencesPage::new();
+    page.add(&section("General", &GENERAL, values));
+    page.add(&section("Accounts", &ACCOUNTS, values));
+    page.add(&section("View", &VIEW, values));
+
+    let toolbar = adw::ToolbarView::new();
+    toolbar.add_top_bar(&adw::HeaderBar::new());
+    toolbar.set_content(Some(&page));
+
+    let dialog = adw::Dialog::new();
+    dialog.set_title("Keyboard Shortcuts");
+    dialog.set_content_width(400);
+    dialog.set_content_height(560);
+    dialog.set_child(Some(&toolbar));
+    dialog.present(Some(window));
+}
+
+#[cfg(not(feature = "adw-shortcuts"))]
+#[allow(deprecated)] // GtkShortcutLabel: no 1.7 replacement for the keycaps.
+fn section(title: &str, entries: &[Entry], values: &Values) -> adw::PreferencesGroup {
+    let group = adw::PreferencesGroup::builder().title(title).build();
+    for entry in entries {
+        if let Some(accel) = keys(values, entry).first() {
+            let label = gtk::ShortcutLabel::new(accel);
+            label.set_valign(gtk::Align::Center);
+            let row = adw::ActionRow::builder().title(entry.title).build();
+            row.add_suffix(&label);
+            group.add(&row);
+        }
+    }
+    group
 }
 
 #[cfg(test)]

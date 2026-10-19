@@ -40,8 +40,8 @@ WhatsApp or Meta; WhatsApp is a trademark of WhatsApp LLC.
 
 ## Installing
 
-whatsup-desktop officially supports Fedora 43 and newer (it needs libadwaita
-1.8 or newer). Build the RPM ([see below](#building-from-source)), then:
+whatsup-desktop officially supports Fedora 43 and newer (which ship libadwaita
+1.8). Build the RPM ([see below](#building-from-source)), then:
 
 ```sh
 sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
@@ -50,6 +50,17 @@ sudo dnf install ./target/rpm/RPMS/x86_64/whatsup-desktop-*.rpm
 The RPM provided on the [releases](https://github.com/inittux111/whatsup-desktop/releases/latest) page is only supported for Fedora 44. My
 personal [COPR repo](https://copr.fedorainfracloud.org/coprs/inittux0101/pkgs-upstream-latest)
 provides builds for other recent Fedora versions.
+
+**Debian stable** (trixie) is also supported: it ships older GNOME libraries
+(libadwaita 1.7, GTK 4.18), so that build falls back to a libadwaita 1.7
+keyboard-shortcuts dialog, but is otherwise the same app. Build the `.deb`
+([see below](#debian)), then:
+
+```sh
+sudo apt install ./target/deb/whatsup-desktop_*.deb
+```
+
+The `.deb` provided on the [releases](https://github.com/inittux111/whatsup-desktop/releases/latest) page is built for Debian 13 (trixie).
 
 Arch builds too, but isn't officially supported;
 see [Other systems](#other-systems-not-officially-supported).
@@ -142,6 +153,26 @@ toolbox run -c whatsup-desktop make rpm        # build the RPM into target/rpm/R
 ```
 
 `make rpm` packs the committed code, so commit your changes first.
+
+### Debian
+
+Debian stable (trixie) builds in a podman container, which also carries the
+Rust toolchain (Debian's own `rustc` is older than the gtk-rs crates need):
+
+```sh
+podman build -t whatsup-desktop-deb packaging/debian
+podman run --rm -v "$PWD":/src:Z -w /src whatsup-desktop-deb make deb
+```
+
+`make deb` builds `--no-default-features`, which selects the libadwaita 1.7
+shortcuts dialog, and writes the package to `target/deb/`. The crates are
+fetched from crates.io during the build, so the container needs network
+access. To run the tests or a one-off command in the same environment:
+
+```sh
+podman run --rm -v "$PWD":/src:Z -w /src whatsup-desktop-deb \
+    cargo test --no-default-features
+```
 
 ### Other systems (not officially supported)
 

@@ -11,11 +11,19 @@ use super::{group, new_page};
 use crate::settings::{Settings, accel};
 use crate::shortcuts::{self, Entry};
 
+/// The keycap widget: AdwShortcutLabel on libadwaita 1.8, and the
+/// (deprecated) GtkShortcutLabel it was forked from on 1.7 (Debian stable).
+#[cfg(feature = "adw-shortcuts")]
+type KeyLabel = adw::ShortcutLabel;
+#[cfg(not(feature = "adw-shortcuts"))]
+#[allow(deprecated)] // GtkShortcutLabel: no 1.7 replacement for the keycaps.
+type KeyLabel = gtk::ShortcutLabel;
+
 /// One shortcut's row, and the widgets that show its keys.
 struct Row {
     entry: &'static Entry,
     row: adw::ActionRow,
-    keys: adw::ShortcutLabel,
+    keys: KeyLabel,
     reset: gtk::Button,
 }
 
@@ -72,8 +80,9 @@ pub fn page(app: &adw::Application, settings: &Settings) -> adw::PreferencesPage
     page
 }
 
+#[cfg_attr(not(feature = "adw-shortcuts"), allow(deprecated))] // GtkShortcutLabel on 1.7.
 fn row(group: &adw::PreferencesGroup, entry: &'static Entry) -> Row {
-    let keys = adw::ShortcutLabel::new("");
+    let keys = KeyLabel::new("");
     keys.set_disabled_text("Off");
     keys.set_valign(gtk::Align::Center);
     let reset = gtk::Button::builder()
@@ -129,6 +138,7 @@ fn connect(app: &adw::Application, settings: &Settings, rows: &Rows) {
 }
 
 /// Shows each shortcut's current keys, and a reset button where it differs.
+#[cfg_attr(not(feature = "adw-shortcuts"), allow(deprecated))] // set_accelerator on 1.7.
 fn refresh(rows: &[Row], settings: &Settings) {
     let values = settings.get();
     for row in rows {
