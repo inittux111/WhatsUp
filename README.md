@@ -60,6 +60,8 @@ keyboard-shortcuts dialog, but is otherwise the same app. Build the `.deb`
 sudo apt install ./target/deb/whatsup-desktop_*.deb
 ```
 
+The `.deb` provided on the [releases](https://github.com/inittux111/whatsup-desktop/releases/latest) page is built for Debian 13 (trixie).
+
 Arch builds too, but isn't officially supported;
 see [Other systems](#other-systems-not-officially-supported).
 

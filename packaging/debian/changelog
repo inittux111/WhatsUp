@@ -1,7 +1,7 @@
-whatsup-desktop (1.0.6) trixie; urgency=medium
+whatsup-desktop (1.1.0) trixie; urgency=medium
 
-  * Package for Debian stable (trixie). Built with --no-default-features so
+  * First Debian stable (trixie) release. Built with --no-default-features so
     the keyboard shortcuts dialog uses the libadwaita 1.7 fallback, since
     Debian stable has no AdwShortcutsDialog (libadwaita 1.8).
 
- -- Maarten van der Rijst <claude@feedmebits.nl>  Mon, 19 Oct 2026 18:53:07 +0200
+ -- Maarten van der Rijst <claude@feedmebits.nl>  Mon, 19 Oct 2026 19:30:00 +0200
