@@ -82,7 +82,10 @@ pub fn property(
         "Title" => crate::app::APP_NAME.to_variant(),
         "Status" => status(unread, hidden).to_variant(),
         "WindowId" => 0i32.to_variant(),
-        "IconName" => icon.to_variant(),
+        // The unread icon here too, not only as the attention icon: some
+        // trays ignore Status and always draw IconName, among them the
+        // mate-panel 1.27 that Debian stable ships.
+        "IconName" => if unread > 0 { unread_icon } else { icon }.to_variant(),
         "AttentionIconName" => unread_icon.to_variant(),
         "IconThemePath" => icon_theme_path.to_variant(),
         "ToolTip" => (
@@ -126,6 +129,16 @@ mod tests {
         assert_eq!(
             unread.str(),
             Some("app.whatsup_desktop.WhatsUp-unread-symbolic")
+        );
+    }
+
+    #[test]
+    fn the_icon_itself_shows_unread_chats() {
+        let name = |unread| property("IconName", unread, false, true, "").unwrap();
+        assert_eq!(name(0).str(), Some("app.whatsup_desktop.WhatsUp-tray"));
+        assert_eq!(
+            name(2).str(),
+            Some("app.whatsup_desktop.WhatsUp-tray-unread")
         );
     }
 
