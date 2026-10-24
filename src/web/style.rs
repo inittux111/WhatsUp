@@ -1,5 +1,5 @@
 //! What WhatsUp adds to WhatsApp Web: its own style fixes (`app.css`) and
-//! script fixes (`media.js`, `viewer.js`), the system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in
+//! script fixes (`media.js`, `emoji.js`, `viewer.js`), the system theme's colours (when the user wants them), the user's stylesheets (every `.css` file in
 //! `~/.config/whatsup-desktop/css`), and, only when the user turned them on, their scripts (every
 //! `.js` file in `~/.config/whatsup-desktop/js`). Files are read in the background.
 
@@ -13,6 +13,7 @@ use crate::paths;
 
 const APP_CSS: &str = include_str!("app.css");
 const MEDIA_JS: &str = include_str!("media.js");
+const EMOJI_JS: &str = include_str!("emoji.js");
 const VIEWER_JS: &str = include_str!("viewer.js");
 const WHATSAPP: [&str; 1] = ["https://web.whatsapp.com/*"];
 /// Which `apply` last started on a content manager, so an older one that
@@ -57,8 +58,9 @@ pub async fn apply(content: webkit::UserContentManager, extras: Extras) {
     for source in &css {
         add_style_sheet(&content, source);
     }
-    // Before WhatsApp's own scripts, so its videos already get the fix.
+    // Before WhatsApp's own scripts, so its videos and emoji already get the fix.
     add_script(&content, MEDIA_JS, webkit::UserScriptInjectionTime::Start);
+    add_script(&content, EMOJI_JS, webkit::UserScriptInjectionTime::Start);
     add_script(&content, VIEWER_JS, webkit::UserScriptInjectionTime::Start);
     for source in &js {
         add_script(&content, source, webkit::UserScriptInjectionTime::End);
