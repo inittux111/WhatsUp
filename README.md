@@ -68,7 +68,8 @@ The `.deb` provided on the [releases](https://github.com/inittux111/whatsup-desk
 
 **MATE on Debian:** Debian turns off the MATE panel's support for tray icons
 like whatsup-desktop's, so the icon doesn't show until it's turned back on.
-Settings → General shows a hint with a Turn On button when that's the case.
+In that case Settings → General → Tray and App Icon shows "Tray Icon Not
+Showing", with a Turn On button that turns it back on and restarts the panel.
 
 Arch builds too, but isn't officially supported;
 see [Other systems](#other-systems-not-officially-supported).
