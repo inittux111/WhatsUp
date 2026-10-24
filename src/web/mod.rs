@@ -9,7 +9,9 @@ mod style;
 pub use style::Extras;
 
 use std::cell::Cell;
+use std::ffi::OsString;
 use std::rc::Rc;
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use gtk::prelude::*;
@@ -30,8 +32,29 @@ const CRASH_BACKOFF_MAX: Duration = Duration::from_secs(30);
 /// problems in the graphics driver and the sound system. Must run first in
 /// `main`, before any thread starts.
 pub fn prepare_environment() {
+    let _ = STARTED_WITH.set(
+        std::env::vars_os()
+            .map(|(key, value)| {
+                let mut entry = key;
+                entry.push("=");
+                entry.push(value);
+                entry
+            })
+            .collect(),
+    );
     nvidia::prepare();
     audio::prepare();
+}
+
+/// The environment WhatsUp started with, as `KEY=value`, before
+/// `prepare_environment` changed it for the web processes.
+static STARTED_WITH: OnceLock<Vec<OsString>> = OnceLock::new();
+
+/// The environment for programs WhatsUp starts that outlive it, such as a
+/// restarted panel: without WhatsUp's own changes, which would otherwise
+/// reach every app started from there.
+pub fn original_environment() -> &'static [OsString] {
+    STARTED_WITH.get().map_or(&[], Vec::as_slice)
 }
 
 /// Builds a web view for one account and starts loading WhatsApp Web.

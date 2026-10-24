@@ -81,6 +81,7 @@ fn tray(settings: &Settings, values: &Values) -> adw::PreferencesGroup {
     );
     depends_on(&colored, &show);
     group.add(&show);
+    group.add(&super::tray_hint::row());
     group.add(&colored);
     group.add(&switch(
         "Show Unread Count on App Icon",

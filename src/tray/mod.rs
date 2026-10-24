@@ -11,7 +11,7 @@ use std::rc::{Rc, Weak};
 use gtk::gio;
 use gtk::glib::{self, Variant, prelude::*};
 
-const WATCHER: &str = "org.kde.StatusNotifierWatcher";
+pub const WATCHER: &str = "org.kde.StatusNotifierWatcher";
 
 /// What the icon does; each runs from the main loop, never inside a D-Bus call.
 pub struct Actions {

@@ -9,6 +9,7 @@ mod downloads;
 mod general;
 mod keys;
 mod languages;
+mod tray_hint;
 
 use adw::prelude::*;
 

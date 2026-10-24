@@ -66,6 +66,19 @@ sudo apt install ./target/deb/whatsup-desktop_*.deb
 
 The `.deb` provided on the [releases](https://github.com/inittux111/whatsup-desktop/releases/latest) page is built for Debian 13 (trixie).
 
+**MATE on Debian:** Debian turns off the MATE panel's support for tray icons
+like whatsup-desktop's, so the icon doesn't show until it's turned back on.
+Settings → General shows a hint with a Turn On button when that's the case,
+or do it yourself in a terminal:
+
+```sh
+gsettings set org.mate.panel enable-sni-support true
+mate-panel --replace &
+```
+
+or in dconf Editor (`sudo apt install dconf-editor`): open `/org/mate/panel/`,
+turn on `enable-sni-support`, then log out and back in.
+
 Arch builds too, but isn't officially supported;
 see [Other systems](#other-systems-not-officially-supported).
 
