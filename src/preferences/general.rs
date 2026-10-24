@@ -1,17 +1,37 @@
-//! The General page: running in the background, the tray icon and
-//! notifications.
+//! The General page: the light or dark style, running in the background,
+//! the tray icon and notifications.
 
 use adw::prelude::*;
 
 use super::{depends_on, group, new_page, switch};
-use crate::settings::{Settings, Values};
+use crate::settings::{Settings, Style, Values};
 
 pub fn page(settings: &Settings, values: &Values) -> adw::PreferencesPage {
     let page = new_page("General", "preferences-system-symbolic");
+    page.add(&appearance(settings, values));
     page.add(&background(settings, values));
     page.add(&tray(settings, values));
     page.add(&notifications(settings, values));
     page
+}
+
+fn appearance(settings: &Settings, values: &Values) -> adw::PreferencesGroup {
+    let group = group("Appearance");
+    let style = adw::ComboRow::builder()
+        .title("Style")
+        .subtitle("Light or dark, for WhatsUp and WhatsApp")
+        .model(&gtk::StringList::new(&["Follow System", "Light", "Dark"]))
+        .build();
+    let index = Style::ALL.iter().position(|s| *s == values.style);
+    style.set_selected(index.unwrap_or_default() as u32);
+    let settings = settings.clone();
+    style.connect_selected_notify(move |row| {
+        if let Some(&chosen) = Style::ALL.get(row.selected() as usize) {
+            settings.update(|v| v.style = chosen);
+        }
+    });
+    group.add(&style);
+    group
 }
 
 fn background(settings: &Settings, values: &Values) -> adw::PreferencesGroup {

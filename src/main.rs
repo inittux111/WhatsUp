@@ -2,6 +2,7 @@
 
 mod accounts;
 mod app;
+mod appearance;
 mod background;
 mod badge;
 mod downloads;

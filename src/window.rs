@@ -7,7 +7,7 @@ use gtk::{gio, glib};
 use crate::accounts::Accounts;
 use crate::app::APP_NAME;
 use crate::settings::Settings;
-use crate::{preferences, shortcuts, theme};
+use crate::{appearance, preferences, shortcuts, theme};
 
 /// The main window and the parts of it that other modules attach to.
 pub struct Main {
@@ -46,6 +46,7 @@ pub fn build(app: &adw::Application, settings: Settings) -> Main {
         .content(&content)
         .build();
     add_actions(&window, &accounts, &settings);
+    appearance::follow(&settings);
     window.connect_close_request(glib::clone!(
         #[strong]
         settings,

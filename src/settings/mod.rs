@@ -14,7 +14,7 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 pub use autostart::BACKGROUND_FLAG;
-pub use values::{Values, ZOOM_MAX, ZOOM_MIN, clamp_zoom, is_language_code};
+pub use values::{Style, Values, ZOOM_MAX, ZOOM_MIN, clamp_zoom, is_language_code};
 
 use crate::paths;
 

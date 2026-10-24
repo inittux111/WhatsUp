@@ -49,6 +49,35 @@ pub struct Values {
     pub custom_scripts: bool,
     /// WhatsApp Web takes its colours from the system theme.
     pub system_colors: bool,
+    /// Light or dark, or whichever the system prefers.
+    pub style: Style,
+}
+
+/// The app's light or dark style.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Style {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+impl Style {
+    /// In the order the app offers them.
+    pub const ALL: [Self; 3] = [Self::System, Self::Light, Self::Dark];
+
+    /// The name in the settings file.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::Light => "light",
+            Self::Dark => "dark",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|style| style.name() == name)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -85,6 +114,7 @@ impl Default for Values {
             active_account: accounts::FIRST_ID.to_owned(),
             custom_scripts: false,
             system_colors: true,
+            style: Style::System,
         }
     }
 }
@@ -157,6 +187,13 @@ impl Values {
             .unwrap_or_else(|| v.accounts[0].id.clone());
         v.custom_scripts = flag(CHATS, "custom-scripts", v.custom_scripts);
         v.system_colors = flag(CHATS, "system-colors", v.system_colors);
+        if let Some(style) = file
+            .string(GENERAL, "style")
+            .ok()
+            .and_then(|name| Style::from_name(&name))
+        {
+            v.style = style;
+        }
         v
     }
 
@@ -189,6 +226,7 @@ impl Values {
         file.set_string(GENERAL, "active-account", &self.active_account);
         file.set_boolean(CHATS, "custom-scripts", self.custom_scripts);
         file.set_boolean(CHATS, "system-colors", self.system_colors);
+        file.set_string(GENERAL, "style", self.style.name());
         file.to_data().to_string()
     }
 }
@@ -257,6 +295,7 @@ mod tests {
             active_account: "account-2".into(),
             custom_scripts: true,
             system_colors: false,
+            style: Style::Dark,
         };
         assert_eq!(Values::parse(&values.to_data()), values);
     }
@@ -288,6 +327,16 @@ mod tests {
         );
         let languages = Values::parse("[Chats]\nspell-languages=nl_NL;../x;en;\n");
         assert_eq!(languages.spell_languages, ["nl_NL", "en"]);
+        let style = Values::parse("[General]\nstyle=purple\n");
+        assert_eq!(style.style, Style::System);
+    }
+
+    #[test]
+    fn style_names_round_trip() {
+        for style in Style::ALL {
+            assert_eq!(Style::from_name(style.name()), Some(style));
+        }
+        assert_eq!(Style::from_name("Dark"), None);
     }
 
     #[test]

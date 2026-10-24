@@ -24,6 +24,8 @@ WhatsApp client, written in Python.
 - **Follows your GNOME theme**: WhatsApp itself takes its colours from your
   theme and accent colour, light or dark, and changes along with them; your
   own stylesheets and (if you turn them on) scripts go on top
+- **Light or dark style**: follows the system, or always light or always
+  dark, whatever GNOME uses
 - Remembers its window size, and shows the unread count on the app icon in
   docks that support it
 
@@ -77,6 +79,7 @@ WhatsApp's menu. Changes apply straight away.
 
 | Setting | What it does | Default |
 |---|---|---|
+| Style | Light or dark: Follow System, Light or Dark, for the window and WhatsApp | Follow System |
 | Run in Background | Closing the window keeps whatsup-desktop running in the tray | On |
 | Start at Login | Opens whatsup-desktop when you log in | Off |
 | Start in Background | When starting at login, stays hidden in the tray | On |
