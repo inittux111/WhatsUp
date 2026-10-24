@@ -1,3 +1,12 @@
+whatsup-desktop (1.2.0) trixie; urgency=medium
+
+  * Add a light or dark Style setting (Settings, General, Appearance).
+  * Explain a missing tray icon in Settings. Debian turns off the MATE
+    panel's tray support for icons like WhatsUp's; the hint turns it back
+    on, or shows how in a terminal or dconf Editor.
+
+ -- Maarten van der Rijst <claude@feedmebits.nl>  Sat, 24 Oct 2026 19:30:00 +0200
+
 whatsup-desktop (1.1.0) trixie; urgency=medium
 
   * First Debian stable (trixie) release. Built with --no-default-features so
