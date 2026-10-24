@@ -1,3 +1,10 @@
+whatsup-desktop (1.2.1) trixie; urgency=medium
+
+  * Fix emoji missing from the emoji picker, messages and reactions.
+  * Show unread chats on the tray icon in the MATE panel.
+
+ -- Maarten van der Rijst <claude@feedmebits.nl>  Sat, 24 Oct 2026 20:45:00 +0200
+
 whatsup-desktop (1.2.0) trixie; urgency=medium
 
   * Add a light or dark Style setting (Settings, General, Appearance).

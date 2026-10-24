@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 
 Name:           whatsup-desktop
-Version:        1.2.0
+Version:        1.2.1
 Release:        1%{?dist}
 Summary:        WhatsApp Web for GNOME
 License:        GPL-3.0-or-later
@@ -63,6 +63,11 @@ make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 %{_datadir}/icons/hicolor/scalable/apps/app.whatsup_desktop.WhatsUp-tray-unread.svg
 
 %changelog
+* Sat Oct 24 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.2.1-1
+- Fix emoji missing from the emoji picker, messages and reactions
+- Show unread chats on the tray icon in trays that ignore the attention
+  icon, such as Debian's MATE panel
+
 * Sat Oct 24 2026 Maarten van der Rijst <claude@feedmebits.nl> - 1.2.0-1
 - Add a light or dark Style setting (Settings, General, Appearance)
 - Explain a missing tray icon in Settings; on Debian's MATE, turn the
